@@ -1,0 +1,72 @@
+# ============================================================
+# Oxford RobotCar dataset configuration
+# ============================================================
+# Dataset root and weights paths are supplied via configs/paths.yaml.
+# Layout per traversal (under datasets.oxford_robotcar):
+#   {traversal_id}/
+#   ├── rtk/rtk.csv                 ← RTK GPS (timestamp, northing, easting, yaw)
+#   ├── stereo/left/*.png           ← raw Bayer images (960x1280, uint8, 1ch)
+#   └── stereo.timestamps           ← microsecond timestamps
+# Shared at dataset root:
+#   camera-models/stereo_wide_left_distortion_lut.bin  ← undistortion LUT (float64, 960x1280x2)
+#
+# Images are raw Bayer (single-channel).
+# Pipeline: demosaic(GRBG) -> grayscale -> undistort(LUT) -> resize -> 3ch stack
+# Timestamps are int64 microseconds — NEVER cast to float32.
+
+dataset:
+  name: oxford
+
+  traversals:
+    database:
+      id: "2014-12-09-13-21-02"
+      condition: overcast
+      role: database
+    overcast_rain:
+      id: "2014-11-25-09-18-32"
+      condition: overcast_rain
+    night:
+      id: "2014-12-16-18-44-24"
+      condition: night
+    rain:
+      id: "2015-10-29-12-18-17"
+      condition: rain
+    dusk:
+      id: "2014-11-21-16-07-03"
+      condition: dusk
+    overcast_3month:
+      id: "2015-03-17-11-08-44"
+      condition: overcast_3month
+
+  paths:
+    images: stereo/left
+    timestamps: stereo.timestamps
+    rtk: rtk/rtk.csv
+    distortion_lut: camera-models/stereo_wide_left_distortion_lut.bin
+
+camera:
+  model: stereo_wide_left
+  fx: 983.044006
+  fy: 983.044006
+  cx: 643.646973
+  cy: 493.378998
+  image_width: 1280
+  image_height: 960
+  bayer_pattern: GRBG
+
+preprocessing:
+  demosaic: true
+  bayer_code: COLOR_BAYER_GR2BGR
+  to_grayscale: true
+  stack_3ch: true
+  undistort: true
+  resize: [480, 640]               # H, W
+  spatial_subsample_m: 2.0
+
+ground_truth:
+  coordinate_system: utm
+  positive_threshold_m: 25.0
+  negative_threshold_m: 50.0
+  heading_threshold_deg: 30.0
+
+seed: 42

@@ -1,0 +1,63 @@
+# ============================================================
+# NCLT dataset configuration
+# ============================================================
+# Dataset root supplied via configs/paths.yaml (datasets.nclt).
+# Layout per session:
+#   {date}/
+#   ├── groundtruth.csv            ← 6-DoF poses (timestamp, x, y, z, roll, pitch, yaw)
+#   ├── lb3/Cam5_converted/        ← images (.png), filenames = microsecond timestamps
+#   └── velodyne/pcd/              ← NOT used
+#
+# Cam5_converted images are already undistorted.
+# Timestamps are int64 microseconds — NEVER cast to float32.
+
+dataset:
+  name: nclt
+
+data_layout:
+  image_subdir: lb3/Cam5_converted
+  gt_filename: groundtruth.csv
+  image_extension: .png
+
+traversals:
+  database:
+    date: "2012-08-20"
+    season: summer
+  calibration:
+    - date: "2012-10-28"
+      role: calib_1
+      season: autumn
+    - date: "2012-12-01"
+      role: calib_2
+      season: winter
+  test:
+    - date: "2012-01-22"
+      role: test_1
+      season: winter
+    - date: "2013-02-23"
+      role: test_2
+      season: winter
+    - date: "2013-04-05"
+      role: test_3
+      season: spring
+  all_dates:
+    - "2012-01-22"
+    - "2012-08-20"
+    - "2012-10-28"
+    - "2012-12-01"
+    - "2013-02-23"
+    - "2013-04-05"
+
+preprocessing:
+  camera: Cam5
+  image_source: Cam5_converted
+  skip_undistortion: true
+  target_size: [401, 618]          # width, height
+  subsample_distance_m: 2.0
+
+ground_truth:
+  pos_threshold_m: 10.0
+  pos_heading_deg: 30.0
+  neg_threshold_m: 25.0
+
+seed: 42

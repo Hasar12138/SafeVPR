@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "safevpr"
+version = "0.1.0"
+description = "Patch-Based Conformal Verification for Safe Cross-Condition Sequence Visual Place Recognition"
+requires-python = ">=3.10"
+dependencies = [
+    "torch", "torchvision", "numpy", "scipy", "pillow", "pyyaml", "matplotlib", "tqdm",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["safevpr*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-p no:dash"

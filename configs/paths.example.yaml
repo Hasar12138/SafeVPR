@@ -1,0 +1,12 @@
+# Copy to paths.yaml and fill in. paths.yaml is git-ignored.
+datasets:
+  oxford_robotcar: /path/to/oxford
+  nclt: /path/to/nclt
+  st_lucia: /path/to/st_lucia
+weights:
+  dinov2: null            # null -> auto-download via torch.hub
+  netvlad: /path/to/netvlad.pth
+  cosplace: /path/to/cosplace.pth
+  d2vpr: /path/to/d2vpr.pth
+cache_dir: ./cache
+results_dir: ./results

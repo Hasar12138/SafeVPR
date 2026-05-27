@@ -1,0 +1,33 @@
+# ============================================================
+# St Lucia dataset configuration
+# ============================================================
+# Dataset root supplied via configs/paths.yaml (datasets.st_lucia).
+# Single-route morning-vs-noon pair. Image filenames encode UTM coordinates and
+# a panoid that recovers the original video-frame order:
+#   @easting@northing@zone@J@lat@lon@panoid@@@@@@@@.jpg
+# Sorting by the panoid field (7th @-separated token) yields temporal order.
+
+dataset:
+  name: st_lucia
+
+data_layout:
+  queries_subdir: queries
+  database_subdir: database
+  image_extension: .jpg
+  filename_easting_field: 1
+  filename_northing_field: 2
+  filename_panoid_field: 7
+
+sequence:
+  t_frames: 10
+  k_topk: 20
+
+ground_truth:
+  coordinate_system: utm
+  same_place_m: 25.0
+
+split:
+  spatial_block_m: 200.0           # arc-length cycle block width
+  separation_m: 50.0               # minimum train<->eval physical separation
+
+seed: 42

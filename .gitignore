@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pth
+configs/paths.yaml
+data/
+weights/
+cache/
+results/
+*.egg-info/
+.pytest_cache/
+docs/AUDIT_REPORT.md
