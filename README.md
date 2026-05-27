@@ -2,6 +2,20 @@
 
 **Patch-Based Conformal Verification for Safe Cross-Condition Sequence Visual Place Recognition**
 
+SafeVPR turns any black-box sequence retrieval into a *safe* accept/reject
+decision. Each frame below is one query decision under cross-condition shift.
+
+**Accept a correct match** — Oxford RobotCar, dusk: the verifier score clears
+the per-bin threshold, so the localization is used.
+
+![Oxford dusk demo](assets/demo_oxford_dusk.gif)
+
+**Abstain on a wrong match** — St Lucia, morning↔noon: the retrieved top-1 is
+49 m away; the verifier score falls below the threshold, so SafeVPR safely
+rejects instead of accepting the error.
+
+![St Lucia demo](assets/demo_st_lucia.gif)
+
 ## 1. Overview
 
 Visual place recognition (VPR) systems must decide not only *where* a query was
@@ -127,7 +141,8 @@ SafeVPR/
 │   ├── extract_scores.py    # Stage-2 verifier extraction (per setup, GPU)
 │   └── evaluate.py          # cross-condition calibrate + FDR/TPR/validity
 ├── configs/                 # paths.example.yaml + per-dataset YAML
-└── tests/                   # zero-data smoke test + parity tests
+├── tests/                   # zero-data smoke test + parity tests
+└── assets/                  # README demo GIFs
 ```
 
 ## 8. Citation
