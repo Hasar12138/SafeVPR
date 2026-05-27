@@ -72,18 +72,33 @@ Copy the template and fill in the paths (the real file is git-ignored):
 cp configs/paths.example.yaml configs/paths.yaml
 ```
 
-## 4. Quick start (zero data, ~seconds)
+## 4. Quick start
 
-Run the end-to-end calibrate → evaluate pipeline on the synthetic fixture — no
-images, no GPU, no datasets:
+Run the accept/abstain decision on synthetic data — no images, GPU, or datasets:
 
 ```bash
-pytest tests/test_smoke.py -v
+python demo.py
 ```
 
-This generates synthetic verifier scores + labels, fits the Mondrian conformal
-calibrator, and checks that the accepted set's FDR respects `alpha` with a
-non-trivial TPR.
+It calibrates the Mondrian conformal thresholds and prints the controlled FDR,
+the TPR, and example per-query ACCEPT / ABSTAIN decisions.
+
+### Using the library on your own data
+
+```python
+from safevpr.verifier import load_dinov2, verify_pair
+from safevpr.conformal import fit_mondrian_ltt, accept
+from safevpr.metrics import fdr, tpr
+
+# Stage 2 — score each (query window, candidate window) pair of T frames
+model = load_dinov2()                       # frozen DINOv2 ViT-L/14
+s = verify_pair(model, q_frames, c_frames)  # patch-MNN + Lowe score in [0, 1]
+
+# Stage 3 — calibrate on a labelled split, then decide on new queries
+thresholds = fit_mondrian_ltt(cal_scores, cal_correct, alpha=0.10)
+decision   = accept(test_scores, thresholds)   # True = accept, False = abstain
+print("FDR", fdr(test_correct, decision), "TPR", tpr(test_correct, decision))
+```
 
 ## 5. Reproducing the main result
 
