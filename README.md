@@ -74,14 +74,19 @@ cp configs/paths.example.yaml configs/paths.yaml
 
 ## 4. Quick start
 
-Run the accept/abstain decision on synthetic data — no images, GPU, or datasets:
+Run the cross-condition accept/abstain decision on a bundled sample of **real**
+verifier scores (the eight CosPlace-backbone deployments) — no images, GPU, or
+full datasets:
 
 ```bash
 python demo.py
 ```
 
-It calibrates the Mondrian conformal thresholds and prints the controlled FDR,
-the TPR, and example per-query ACCEPT / ABSTAIN decisions.
+For each deployment it calibrates the Mondrian conformal thresholds on the
+*other* deployments and evaluates the held-out one (calibration and test never
+share a condition), printing the leave-one-out validity (8/8 with FDR ≤ alpha),
+then a detailed view of a hard deployment with example ACCEPT / ABSTAIN
+decisions.
 
 ### Using the library on your own data
 
@@ -156,6 +161,7 @@ SafeVPR/
 │   ├── extract_scores.py    # Stage-2 verifier extraction (per setup, GPU)
 │   └── evaluate.py          # cross-condition calibrate + FDR/TPR/validity
 ├── configs/                 # paths.example.yaml + per-dataset YAML
+├── examples/                # bundled real verifier scores for demo.py
 ├── tests/                   # zero-data smoke test + parity tests
 └── assets/                  # README demo GIFs
 ```
