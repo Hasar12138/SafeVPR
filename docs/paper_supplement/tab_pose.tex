@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Empirical metric pose-error admissibility for \method: the binary retrieval label is replaced with $|\text{pose error}| \leq \tau_p$, so the conformal threshold targets localization error directly. Computed on the $20$-setup Oxford$+$NCLT subset (St~Lucia excluded: its $\sim 5$\,m GPS subsampling makes sub-$25$\,m metric labels unstable). $^\dagger$ trivially valid (no accepts): the in-condition cal pool is below $5B/\alpha$, so vanilla LTT abstains and FDR is vacuous.}
+\label{tab:pose}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.06\linewidth}p{0.22\linewidth} rrr rrr}
+\toprule
+& & \multicolumn{3}{c}{$\alpha = 0.05$} & \multicolumn{3}{c}{$\alpha = 0.10$} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+$\tau_p$ & Setting & Pass & FDR & TPR & Pass & FDR & TPR \\
+\midrule
+  5\,m & cross-condition & 20/20 & 0.0022 & 0.307 & 20/20 & 0.0052 & 0.390 \\
+  5\,m & in-condition & 20/20$^\dagger$ & — & 0.000 & 20/20 & 0.0014 & 0.372 \\
+  10\,m & cross-condition & 20/20 & 0.0018 & 0.449 & 20/20 & 0.0080 & 0.617 \\
+  10\,m & in-condition & 20/20$^\dagger$ & — & 0.000 & 20/20 & 0.0019 & 0.398 \\
+  25\,m & cross-condition & 19/20 & 0.0080 & 0.683 & 20/20 & 0.0180 & 0.748 \\
+  25\,m & in-condition & 20/20$^\dagger$ & — & 0.000 & 20/20 & 0.0003 & 0.415 \\
+\bottomrule
+\end{tabular}
+\end{table}

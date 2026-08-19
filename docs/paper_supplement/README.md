@@ -14,7 +14,7 @@ Referenced from Sec. V-A and V-C. For every cross-condition setup at
 thresholds, and the number of abstaining bins. Two checks it documents:
 calibration pools (1393–1887 queries) never fall below the 5B/α
 fallback thresholds (250/500), and the FD column totals 201 —
-reconciling exactly with the closed-loop study (Table V of the paper).
+reconciling exactly with the closed-loop study (Table IV of the paper).
 
 ![Per-setup detail table](tab_per_setup.png)
 
@@ -70,3 +70,36 @@ same setups. Any learned score that sees condition information during
 training inherits a condition-dependent output distribution.
 
 ![Learned re-ranker negative result](tab_learned_reranker.png)
+
+## S7. Metric pose-error admissibility table
+
+Referenced from Sec. V-E. The metric validity variant (label
+= |pose error| <= tau_p) on the densely-GPSed Oxford+NCLT subset:
+20/20 valid at alpha = 0.10 for every tau_p in {5, 10, 25} m.
+
+![Pose-error table](tab_pose.png)
+
+## S8. Verifier x calibrator sweep — full table (both alpha levels)
+
+Referenced from Sec. V-B (the paper shows the alpha = 0.10 block).
+Full sweep including the alpha = 0.05 block for all seven verifier
+scores x two calibrators, plus the pure-VPR baseline.
+
+![Full verifier sweep](tab_verifier_sweep_full.png)
+
+## S9. Calibration-budget ablation (numbers)
+
+Referenced from Sec. VI-B. Subsampled calibration pools, 10 seeds per
+size, all 23 setups, alpha = 0.10. Validity is retained in >= 98.7% of
+runs at every size; the cost of small pools is coverage:
+
+| n_cal | non-trivial coverage | mean TPR |
+|------:|---------------------:|---------:|
+| >= 700 (~140/bin) | 100% of runs | 0.69 |
+| 400 | 93% | 0.60 |
+| 250 (Mondrian boundary 5B/alpha) | 75% | 0.50 |
+| 150 (vanilla-LTT fallback) | comparable | 0.55 |
+| ~50 | collapses toward global abstention | — |
+
+Deployment guideline: budget >~ 150 labelled calibration queries per
+bin; expect coverage loss, not FDR violation, below that.
