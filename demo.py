@@ -77,7 +77,7 @@ def main():
     groups = [
         (acc & (te_c == 1), "ACCEPT", "correct", "true positive"),
         (acc & (te_c == 0), "ACCEPT", "wrong", "false discovery (bounded by alpha)"),
-        (~acc & (te_c == 0), "ABSTAIN", "wrong", "safely rejected"),
+        (~acc & (te_c == 0), "ABSTAIN", "wrong", "correctly rejected"),
         (~acc & (te_c == 1), "ABSTAIN", "correct", "lost recall"),
     ]
     rng = np.random.default_rng(0)

@@ -1,9 +1,10 @@
 # SafeVPR
 
-**Patch-Based Conformal Verification for Safe Cross-Condition Sequence Visual Place Recognition**
+**Patch-Based Verification with Empirical FDR Control for Cross-Condition Sequence Visual Place Recognition**
 
-SafeVPR turns any black-box sequence retrieval into a *safe* accept/reject
-decision. Each frame below is one query decision under cross-condition shift.
+SafeVPR turns any black-box sequence retrieval into an accept/reject decision
+with empirically controlled false-discovery rate (FDR). Each frame below is one
+query decision under cross-condition shift.
 
 **Accept a correct match** — Oxford RobotCar, dusk: the verifier score clears
 the per-bin threshold, so the localization is used.
@@ -11,8 +12,8 @@ the per-bin threshold, so the localization is used.
 ![Oxford dusk demo](assets/demo_oxford_dusk.gif)
 
 **Abstain on a wrong match** — St Lucia, morning↔noon: the retrieved top-1 is
-49 m away; the verifier score falls below the threshold, so SafeVPR safely
-rejects instead of accepting the error.
+49 m away; the verifier score falls below the threshold, so SafeVPR abstains
+instead of accepting the error.
 
 ![St Lucia demo](assets/demo_st_lucia.gif)
 
@@ -21,10 +22,10 @@ rejects instead of accepting the error.
 Visual place recognition (VPR) systems must decide not only *where* a query was
 taken but also *whether to trust* that decision. Under condition shift (day vs.
 night, season changes, weather) the raw retrieval similarity is a poor proxy for
-correctness, so a fixed similarity threshold cannot guarantee a bounded
-false-discovery rate (FDR).
+correctness, so a fixed similarity threshold cannot keep the false-discovery
+rate (FDR) bounded.
 
-SafeVPR is a three-stage, backbone-agnostic pipeline that adds a *safe*
+SafeVPR is a three-stage, backbone-agnostic pipeline that adds a calibrated
 accept/reject decision on top of any black-box sequence retrieval:
 
 1. **Stage 1 — Retrieval (black box).** A frame-level similarity matrix is reduced
@@ -35,11 +36,20 @@ accept/reject decision on top of any black-box sequence retrieval:
    test, yielding a scalar verification score `s` in `[0, 1]`.
 3. **Stage 3 — Conformal calibration (ours).** A Mondrian conformal Learn-Then-Test
    (LTT) procedure fits a per-quintile-bin threshold with a Bonferroni-split error
-   budget, controlling FDR at a target `alpha`.
+   budget, targeting FDR at a chosen `alpha`.
 
-**Key claim:** conformal validity decouples from raw discrimination — a verifier
-with higher AUROC is *not* automatically safer; the calibrator is what controls
-FDR. SafeVPR reaches 23/23 valid cross-condition setups at `alpha = 0.10`.
+**Key claim:** empirical validity decouples from raw discrimination — a verifier
+with higher AUROC does *not* automatically control FDR better. What matters is
+the stability of the score-conditional error rate under condition shift, and the
+patch-MNN score keeps that map stable where cosine and stronger-AUROC verifiers
+do not. SafeVPR reaches 23/23 empirically valid cross-condition setups at
+`alpha = 0.10`.
+
+**Claim scope.** The FDR control demonstrated here is *empirical*, not a formal
+guarantee: cross-condition deployment violates the exchangeability assumption
+behind conformal prediction, and Mondrian binning does not restore it. Validity
+is established on the evaluated benchmark (and characterized under
+leave-one-dataset-out transfer in the paper), not proven distribution-free.
 
 ## 2. Installation
 
@@ -186,8 +196,8 @@ PNG preview for each item):
 
 ```bibtex
 @article{safevpr2026,
-  title   = {Patch-Based Conformal Verification for Safe Cross-Condition
-             Sequence Visual Place Recognition},
+  title   = {SafeVPR: Patch-Based Verification with Empirical {FDR} Control
+             for Cross-Condition Sequence Visual Place Recognition},
   author  = {Anonymous},          % TODO camera-ready
   journal = {Under review},       % TODO camera-ready
   year    = {2026}
