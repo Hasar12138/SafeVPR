@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Negative result on a learned re-ranker baseline (CAR, a single-head cross-attention re-ranker over the top-$K$ candidates) on the original $6$-setup cross-condition grid (Oxford-night and NCLT-2012-10-28 $\times$ $3$ backbones). Five standard fixes are listed in \Cref{sec:learned_reranker}. All learned variants fail to control FDR; \textsc{SafeVPR} succeeds on the same setups.}
+\label{tab:learned_reranker}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{p{0.42\linewidth} rrr rrr}
+\toprule
+& \multicolumn{3}{c}{$\alpha = 0.05$} & \multicolumn{3}{c}{$\alpha = 0.10$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & Pass & FDR & TPR & Pass & FDR & TPR \\
+\midrule
+  CAR (cross-attention re-ranker, $118$\,k params) & 1/6 & 0.1366 & 0.736 & 1/6 & 0.2384 & 0.847 \\
+  CAR $+$ within-query z-score & 1/6 & 0.1447 & 0.705 & 1/6 & 0.2562 & 0.862 \\
+  CAR $+$ test-time temperature scaling & 1/6 & — & — & 1/6 & — & — \\
+  CAR $+$ DANN (gradient reversal) & 0/6 & — & — & 0/6 & — & — \\
+  CAR $+$ IWCP~\cite{tibshirani2019conformal} & 1/6 & — & — & 1/6 & — & — \\
+  \midrule
+  \textbf{\textsc{SafeVPR} (ours)} & 6/6 & 0.0039 & 0.503 & 6/6 & 0.0152 & 0.616 \\
+\bottomrule
+\end{tabular}
+\end{table}

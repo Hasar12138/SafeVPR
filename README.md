@@ -166,7 +166,23 @@ SafeVPR/
 └── assets/                  # README demo GIFs
 ```
 
-## 8. Citation
+## 8. Paper supplement
+
+Supplementary tables and figures referenced from the paper as
+*"supplementary material in the code repository"* live in
+[`docs/paper_supplement/`](docs/paper_supplement/) (PDF + LaTeX source +
+PNG preview for each item):
+
+| Item | Content |
+|------|---------|
+| [S1 — per-setup table](docs/paper_supplement/README.md#s1-per-setup-detail-table-23-setups) | All 23 setups: sizes, accepts, false accepts, FDR/TPR/coverage, fitted thresholds |
+| [S2 — score-shift / KS analysis](docs/paper_supplement/README.md#s2-cal-vs-test-score-distributions-ks-analysis) | Cal-vs-test distributions for four verifiers; KS does not predict validity |
+| [S3 — bootstrap CIs](docs/paper_supplement/README.md#s3-per-setup-bootstrap-confidence-intervals) | Per-setup bootstrap FDR confidence intervals |
+| [S4 — odometry-noise sweep](docs/paper_supplement/README.md#s4-odometry-noise-sweep-closed-loop-study) | Closed-loop ATE vs. 10x simulated odometry noise |
+| [S5 — runtime breakdown](docs/paper_supplement/README.md#s5-runtime-stage-breakdown) | Per-query latency stages (53.1 ms total) |
+| [S6 — learned re-ranker](docs/paper_supplement/README.md#s6-learned-re-ranker-negative-result) | Negative result: learned scores fail cross-condition FDR control |
+
+## 9. Citation
 
 ```bibtex
 @article{safevpr2026,
@@ -178,6 +194,6 @@ SafeVPR/
 }
 ```
 
-## 9. License
+## 10. License
 
 MIT — see [`LICENSE`](LICENSE).

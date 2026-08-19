@@ -1,0 +1,36 @@
+\begin{table*}[t]
+\centering
+\caption{Per-setup detail for \method\ at $\alpha=0.10$ (main grid): calibration and deployment sizes, accepted queries, false accepts (FD), realized FDR, TPR, coverage, the range of finite per-bin thresholds $\tau_b$, and the number of abstaining bins ($\tau_b=+\infty$). Calibration never falls below the $5B/\alpha$ fallback threshold (\Cref{sec:setup}).}
+\label{tab:per_setup}
+\scriptsize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{l rr rr r r r c r}
+\toprule
+Setup & $n_\mathrm{cal}$ & $n_\mathrm{test}$ & Accepts & FD & FDR & TPR & Cov. & $[\tau_{\min},\tau_{\max}]$ & Abst.\ bins \\
+\midrule
+oxford\_night\_netvlad & 1400 & 1794 & 174 & 0 & 0.000 & 0.50 & 0.10 & [0.10, 0.20] & 2 \\
+oxford\_dusk\_netvlad & 1574 & 976 & 502 & 14 & 0.028 & 0.87 & 0.51 & [0.08, 0.19] & 2 \\
+oxford\_overcast\_3month\_netvlad & 1402 & 1760 & 1724 & 12 & 0.007 & 0.99 & 0.98 & [0.09, 0.14] & 3 \\
+oxford\_rain\_netvlad & 1393 & 1810 & 1635 & 9 & 0.006 & 0.98 & 0.90 & [0.09, 0.17] & 3 \\
+nclt\_2012-10-28\_netvlad & 1565 & 1051 & 139 & 0 & 0.000 & 0.24 & 0.13 & [0.09, 0.19] & 2 \\
+nclt\_2012-01-22\_netvlad & 1634 & 992 & 138 & 0 & 0.000 & 0.27 & 0.14 & [0.08, 0.19] & 2 \\
+st\_lucia\_netvlad & 1706 & 494 & 132 & 4 & 0.030 & 0.52 & 0.27 & [0.08, 0.18] & 2 \\
+oxford\_night\_cosplace & 1581 & 1794 & 1205 & 56 & 0.046 & 0.93 & 0.67 & [0.07, 0.19] & 1 \\
+oxford\_dusk\_cosplace & 1755 & 976 & 836 & 2 & 0.002 & 0.90 & 0.86 & [0.07, 0.18] & 1 \\
+oxford\_overcast\_3month\_cosplace & 1583 & 1760 & 1746 & 8 & 0.005 & 1.00 & 0.99 & [0.07, 0.14] & 2 \\
+oxford\_rain\_cosplace & 1574 & 1810 & 1775 & 1 & 0.001 & 0.99 & 0.98 & [0.07, 0.16] & 2 \\
+nclt\_2012-10-28\_cosplace & 1746 & 1051 & 499 & 18 & 0.036 & 0.67 & 0.47 & [0.07, 0.18] & 1 \\
+nclt\_2012-01-22\_cosplace & 1815 & 992 & 338 & 6 & 0.018 & 0.49 & 0.34 & [0.07, 0.18] & 1 \\
+nclt\_2013-04-05\_cosplace & 1779 & 873 & 425 & 21 & 0.049 & 0.73 & 0.49 & [0.07, 0.18] & 1 \\
+st\_lucia\_cosplace & 1887 & 494 & 420 & 0 & 0.000 & 0.85 & 0.85 & [0.07, 0.18] & 1 \\
+oxford\_night\_d2vpr & 1581 & 1794 & 1547 & 14 & 0.009 & 0.89 & 0.86 & [0.07, 0.19] & 1 \\
+oxford\_dusk\_d2vpr & 1755 & 976 & 911 & 7 & 0.008 & 0.95 & 0.93 & [0.07, 0.18] & 1 \\
+oxford\_overcast\_3month\_d2vpr & 1583 & 1760 & 1737 & 0 & 0.000 & 1.00 & 0.99 & [0.08, 0.14] & 2 \\
+oxford\_rain\_d2vpr & 1574 & 1810 & 1759 & 0 & 0.000 & 0.99 & 0.97 & [0.08, 0.16] & 2 \\
+nclt\_2012-10-28\_d2vpr & 1746 & 1051 & 381 & 3 & 0.008 & 0.54 & 0.36 & [0.07, 0.18] & 1 \\
+nclt\_2012-01-22\_d2vpr & 1815 & 992 & 293 & 7 & 0.024 & 0.41 & 0.30 & [0.07, 0.18] & 1 \\
+nclt\_2013-04-05\_d2vpr & 1779 & 873 & 334 & 17 & 0.051 & 0.58 & 0.38 & [0.07, 0.18] & 1 \\
+st\_lucia\_d2vpr & 1887 & 494 & 480 & 2 & 0.004 & 0.97 & 0.97 & [0.07, 0.18] & 1 \\
+\bottomrule
+\end{tabular}
+\end{table*}

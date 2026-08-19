@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{Per-query latency of the \method\ verifier $+$ calibrator
+overhead on top of an external backbone retrieval. RTX 5070~Ti, FP16,
+PyTorch (no TensorRT). $T{=}10$ frames per query, $P{=}256$ patches.
+Backbone retrieval is dataset-database-size dependent and treated as
+black-box.}
+\label{tab:runtime}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l r}
+\toprule
+Stage (ViT-L/14, paper default) & ms \\
+\midrule
+\dinov{} query features ($T{=}10$ batched)       & 26.1 \\
+\dinov{} candidate features ($T{=}10$ batched)   & 26.1 \\
+Patch-MNN $+$ Lowe-ratio match ($T$ pairs, $P{\times}P$) & 0.9 \\
+Mondrian quintile lookup $+$ threshold compare    & 0.03 \\
+\midrule
+\textbf{Total per-query overhead}                 & \textbf{53.1} \\
+\bottomrule
+\end{tabular}
+\end{table}
