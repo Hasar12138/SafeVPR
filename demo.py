@@ -36,7 +36,7 @@ def main():
     print(f"{len(setups)} deployments; for each, calibrate on the other "
           f"{len(setups) - 1}, evaluate on the held-out one.\n")
 
-    print("Leave-one-out validity (FDR controlled per held-out deployment):")
+    print("Leave-one-out empirical validity (FDR <= alpha per held-out deployment):")
     print(f"{'alpha':>6} | {'valid':>7} | {'mean FDR':>8} | {'mean TPR':>8}")
     print("-" * 40)
     for alpha in ALPHAS:
@@ -76,7 +76,7 @@ def main():
     # one representative query from each outcome type that occurs
     groups = [
         (acc & (te_c == 1), "ACCEPT", "correct", "true positive"),
-        (acc & (te_c == 0), "ACCEPT", "wrong", "false discovery (bounded by alpha)"),
+        (acc & (te_c == 0), "ACCEPT", "wrong", "false discovery (within the alpha budget)"),
         (~acc & (te_c == 0), "ABSTAIN", "wrong", "correctly rejected"),
         (~acc & (te_c == 1), "ABSTAIN", "correct", "lost recall"),
     ]
