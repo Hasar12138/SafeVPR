@@ -188,9 +188,11 @@ PNG preview for each item):
 | [S1 — per-setup table](docs/paper_supplement/README.md#s1-per-setup-detail-table-23-setups) | All 23 setups: sizes, accepts, false accepts, FDR/TPR/coverage, fitted thresholds |
 | [S2 — score-shift / KS analysis](docs/paper_supplement/README.md#s2-cal-vs-test-score-distributions-ks-analysis) | Cal-vs-test distributions for four verifiers; KS does not predict validity |
 | [S3 — bootstrap CIs](docs/paper_supplement/README.md#s3-per-setup-bootstrap-confidence-intervals) | Per-setup bootstrap FDR confidence intervals |
-| [S4 — odometry-noise sweep](docs/paper_supplement/README.md#s4-odometry-noise-sweep-closed-loop-study) | Closed-loop ATE vs. 10x simulated odometry noise |
-| [S5 — runtime breakdown](docs/paper_supplement/README.md#s5-runtime-stage-breakdown) | Per-query latency stages (53.1 ms total) |
-| [S6 — learned re-ranker](docs/paper_supplement/README.md#s6-learned-re-ranker-negative-result) | Negative result: learned scores fail cross-condition FDR control |
+| [S4 — runtime breakdown](docs/paper_supplement/README.md#s4-runtime-stage-breakdown) | Per-query latency stages (53.1 ms total) |
+| [S5 — learned re-ranker](docs/paper_supplement/README.md#s5-learned-re-ranker-negative-result) | Negative result: learned scores fail cross-condition FDR control |
+| [S6 — pose-error table](docs/paper_supplement/README.md#s6-metric-pose-error-admissibility-table) | Metric validity variant, 20/20 valid for tau_p in {5, 10, 25} m |
+| [S7 — full verifier sweep](docs/paper_supplement/README.md#s7-verifier-x-calibrator-sweep--full-table-both-alpha-levels) | Verifier x calibrator sweep at both alpha levels |
+| [S8 — calibration-budget numbers](docs/paper_supplement/README.md#s8-calibration-budget-ablation-numbers) | Subsampled calibration pools: validity kept, coverage lost below ~150/bin |
 
 ## 9. Citation
 

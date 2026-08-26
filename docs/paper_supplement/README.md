@@ -38,19 +38,7 @@ non-negligible mass above the α = 0.05 line.
 
 ![Bootstrap CIs](fig_bootstrap_ci.png)
 
-## S4. Odometry-noise sweep (closed-loop study)
-
-Referenced from Sec. V-F. Median ATE over the 23 setups vs. simulated
-odometry noise (1% / 3% / 10% of step length). The constraint-policy
-ordering is stable across the 10× range; the no-gate curve is nearly
-flat because its error is dominated by erroneous loop-closure
-constraints, not odometry quality. (The paper's headline protocol uses
-real sensor-stream odometry on all three platforms; this sweep is the
-controlled-variable complement.)
-
-![Odometry noise sweep](fig_slam_noise.png)
-
-## S5. Runtime stage breakdown
+## S4. Runtime stage breakdown
 
 Referenced from Sec. VI-A. Per-query latency on an RTX 5070 Ti (FP16,
 T = 10 frames, P = 256 patches): DINOv2 features 2×26.1 ms, patch-MNN +
@@ -59,7 +47,7 @@ independent of database size.
 
 ![Runtime breakdown](tab_runtime.png)
 
-## S6. Learned re-ranker negative result
+## S5. Learned re-ranker negative result
 
 Referenced from Sec. VI-C. A learned cross-attention re-ranker (CAR)
 and five standard fixes (z-score normalisation, test-time temperature
@@ -71,7 +59,7 @@ training inherits a condition-dependent output distribution.
 
 ![Learned re-ranker negative result](tab_learned_reranker.png)
 
-## S7. Metric pose-error admissibility table
+## S6. Metric pose-error admissibility table
 
 Referenced from Sec. V-E. The metric validity variant (label
 = |pose error| <= tau_p) on the densely-GPSed Oxford+NCLT subset:
@@ -79,7 +67,7 @@ Referenced from Sec. V-E. The metric validity variant (label
 
 ![Pose-error table](tab_pose.png)
 
-## S8. Verifier x calibrator sweep — full table (both alpha levels)
+## S7. Verifier x calibrator sweep — full table (both alpha levels)
 
 Referenced from Sec. V-B (the paper shows the alpha = 0.10 block).
 Full sweep including the alpha = 0.05 block for all seven verifier
@@ -87,19 +75,23 @@ scores x two calibrators, plus the pure-VPR baseline.
 
 ![Full verifier sweep](tab_verifier_sweep_full.png)
 
-## S9. Calibration-budget ablation (numbers)
+## S8. Calibration-budget ablation (numbers)
 
 Referenced from Sec. VI-B. Subsampled calibration pools, 10 seeds per
 size, all 23 setups, alpha = 0.10. Validity is retained in >= 98.7% of
 runs at every size; the cost of small pools is coverage:
 
-| n_cal | non-trivial coverage | mean TPR |
-|------:|---------------------:|---------:|
-| >= 700 (~140/bin) | 100% of runs | 0.69 |
-| 400 | 93% | 0.60 |
-| 250 (Mondrian boundary 5B/alpha) | 75% | 0.50 |
-| 150 (vanilla-LTT fallback) | comparable | 0.55 |
-| ~50 | collapses toward global abstention | — |
+| n_cal | valid runs | non-trivial coverage | mean TPR | fallback to vanilla LTT |
+|------:|-----------:|---------------------:|---------:|:-----------------------:|
+| 50 | 99.6% | 0.0% | 0.00 | yes |
+| 100 | 99.1% | 72.6% | 0.49 | yes |
+| 150 | 98.7% | 74.8% | 0.55 | yes |
+| 250 | 100.0% | 74.8% | 0.50 | no |
+| 400 | 100.0% | 93.5% | 0.60 | no |
+| 700 | 100.0% | 100.0% | 0.69 | no |
+| 1000 | 100.0% | 100.0% | 0.72 | no |
+
+("valid runs": seed x setup runs with empirical FDR <= alpha; "non-trivial coverage": runs accepting > 5% of queries; main grid n_cal = 1393-1887.)
 
 Deployment guideline: budget >~ 150 labelled calibration queries per
 bin; expect coverage loss, not FDR violation, below that.
