@@ -178,8 +178,8 @@ SafeVPR/
 
 ## 8. Paper supplement
 
-Supplementary tables and figures referenced from the paper as
-*"supplementary material in the code repository"* live in
+Additional tables and figures that accompany the paper (the manuscript
+itself is self-contained and does not cite them) live in
 [`docs/paper_supplement/`](docs/paper_supplement/) (PDF + LaTeX source +
 PNG preview for each item):
 
