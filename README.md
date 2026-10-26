@@ -2,6 +2,8 @@
 
 **Patch-Based Verification with Empirical FDR Control for Cross-Condition Sequence Visual Place Recognition**
 
+**[Project page](https://hasar12138.github.io/SafeVPR/)** · [Paper (arXiv)](https://arxiv.org/abs/2605.28048) · Accepted to IEEE Robotics and Automation Letters (RA-L), 2026
+
 SafeVPR turns any black-box sequence retrieval into an accept/reject decision
 with empirically controlled false-discovery rate (FDR). Each frame below is one
 query decision under cross-condition shift.
