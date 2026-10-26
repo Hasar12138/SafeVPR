@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafeVPR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="SafeVPR: Patch-Based Verification with Empirical FDR Control for Cross-Condition Sequence Visual Place Recognition. IEEE RA-L 2026.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230072B2'/%3E%3Cpath d='M9 22l5-5 3 3 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans:400,500,700|Noto+Sans:400,400i,700|Noto+Sans+Mono:400,500&display=swap">
+<style>
+/* Layout: the Nerfies / AnyLoc academic template. Centred 960px column, centred
+   section titles, dark pill link buttons, light-grey bands for the live demos.
+   Single light theme by choice. */
+:root{
+  --bg:#FFFFFF; --band:#F5F5F5; --title:#363636; --text:#4A4A4A; --muted:#7A7A7A; --rule:#DBDBDB;
+  --link:#3273DC; --btn:#363636;
+  --safe:#0072B2; --cos:#D55E00; --cal:#9A9A9A;      /* method identity (validated) + calibration grey */
+  --good:#1B7F4C; --bad:#C62828; --warn:#9A6B00;     /* status, reserved */
+  --f-title:"Google Sans","Noto Sans",Helvetica,Arial,sans-serif;
+  --f-body:"Noto Sans",Helvetica,Arial,sans-serif;
+  --f-mono:"Noto Sans Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:16px;line-height:1.6}
+.section{padding-block:3rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.section.band{background:var(--band)}
+.container{max-width:960px;margin-inline:auto;display:grid;gap:1.25rem}
+.container.wide{max-width:1100px}
+.container>*{min-width:0}
+h1,h2,h3{font-family:var(--f-title);color:var(--title);margin:0;text-wrap:balance}
+h2.title{font-size:2rem;font-weight:500;text-align:center;line-height:1.25}
+h3{font-size:1.15rem;font-weight:500}
+p{margin:0}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.lead{text-align:center;max-width:46rem;margin-inline:auto}
+.justify{text-align:justify;hyphens:auto}
+.dnerf{font-variant:small-caps;font-weight:700;color:var(--title)}
+
+/* ---------- title block ---------- */
+.pub{text-align:center;display:grid;gap:.9rem;justify-items:center;padding-block:3.5rem 1rem}
+.pub h1{font-size:clamp(1.9rem,4.4vw,2.75rem);font-weight:500;line-height:1.18;max-width:900px}
+.pub h1 .dnerf{font-variant:normal;color:var(--title)}
+.authors{font-size:1.2rem;display:flex;flex-wrap:wrap;justify-content:center;gap:.15rem 1.1rem;color:var(--link);font-family:var(--f-title)}
+.aff{font-size:1rem;color:var(--text);font-family:var(--f-title)}
+.venue{font-size:1.1rem;color:var(--title);font-family:var(--f-title);font-weight:500}
+.links{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;margin-top:.3rem}
+.pill{display:inline-flex;align-items:center;gap:.45rem;background:var(--btn);color:#fff;border-radius:999px;padding:.45rem 1.05rem;
+  font-family:var(--f-title);font-size:1rem;line-height:1.2;border:0}
+.pill:hover{background:#000;text-decoration:none}
+.pill svg{width:1.05em;height:1.05em;fill:#fff;flex:none}
+.pill[aria-disabled="true"]{background:#8A8A8A;cursor:default}
+
+/* ---------- teaser ---------- */
+.teaser video{width:100%;max-width:100%;aspect-ratio:16/9;display:block;border-radius:4px;background:#fff}
+.teaser .sub{text-align:center;font-family:var(--f-title);font-size:1.15rem;color:var(--title);max-width:44rem;margin-inline:auto}
+.teaser .sub small{display:block;font-family:var(--f-body);font-size:.85rem;color:var(--muted);margin-top:.3rem}
+.figure-caption{text-align:center;font-size:.9rem;color:var(--muted);max-width:52rem;margin-inline:auto}
+video.full{width:100%;max-width:100%;aspect-ratio:16/9;display:block;background:#000;border-radius:4px}
+
+/* ---------- shared chart styles ---------- */
+.tip{position:fixed;pointer-events:none;background:#222;color:#fff;font-family:var(--f-mono);font-size:.75rem;line-height:1.45;
+  padding:6px 9px;border-radius:4px;z-index:30;white-space:nowrap;transform:translate(12px,-50%)}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg text{font-family:var(--f-body)}
+svg .tick{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+svg .lab{fill:var(--text);font-size:11.5px}
+svg .ttl{fill:var(--title);font-family:var(--f-title);font-size:13px;font-weight:500}
+svg .axis{stroke:#B5B5B5;stroke-width:1;fill:none}
+svg .grid{stroke:#EDEDED;stroke-width:1}
+svg .hit{fill:transparent}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem 1.2rem;font-size:.82rem;color:var(--text)}
+.legend span{display:inline-flex;align-items:center;gap:.4rem}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px}
+.panel{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:1.25rem}
+.howto{font-size:.92rem;text-align:center;max-width:52rem;margin-inline:auto}
+select{font:inherit;font-size:.95rem;color:var(--title);background:#fff;border:1px solid var(--rule);border-radius:4px;padding:.35rem .6rem;max-width:100%}
+
+/* ---------- pipeline ---------- */
+.pipe{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.35fr) minmax(0,1.15fr);gap:14px;align-items:stretch}
+.stage{border:1.5px solid var(--rule);border-radius:8px;padding:.8rem .8rem 1rem;display:grid;gap:.6rem;align-content:start;background:#fff;position:relative}
+.stage.s1{border-color:#B5B5B5;background:#FAFAFA}
+.stage.s2{border-color:#E69F00}
+.stage.s3{border-color:#009E73}
+.stage .tag{font-family:var(--f-title);font-size:.95rem;font-weight:500;color:var(--title)}
+.stage.s2 .tag{color:#B07A00} .stage.s3 .tag{color:#007A5A}
+.stage .desc{font-size:.84rem;color:var(--text)}
+.stack{position:relative;height:130px}
+.stack img{position:absolute;width:62%;aspect-ratio:4/3;object-fit:cover;border-radius:3px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.bb{border:1.5px dashed #9A9A9A;border-radius:6px;padding:.45rem .5rem;text-align:center;font-size:.8rem;color:var(--title)}
+.bb b{font-family:var(--f-title);font-weight:500;font-size:.88rem}
+.pair{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pair img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:3px;display:block;max-width:100%}
+.pair canvas{position:absolute;inset:0;pointer-events:none}
+.pair .cap{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);text-align:center}
+.score-eq{text-align:center;font-family:var(--f-mono);font-size:.95rem;color:var(--title)}
+.arrow{position:absolute;right:-12px;top:50%;width:10px;height:10px;border-top:2px solid #777;border-right:2px solid #777;transform:translateY(-50%) rotate(45deg);background:transparent;z-index:2}
+.decision{display:flex;gap:.6rem;align-items:center;justify-content:center;flex-wrap:wrap}
+.chip{font-family:var(--f-title);font-weight:500;font-size:.9rem;padding:.25rem .8rem;border-radius:999px}
+.chip.acc{background:#009E73;color:#fff}
+.chip.rej{border:1.5px solid var(--bad);color:var(--bad)}
+
+/* ---------- budget instrument ---------- */
+.controls{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem 2.2rem;align-items:center}
+.ctl{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;min-width:0}
+.ctl label{font-size:.9rem;color:var(--title);font-family:var(--f-title)}
+.alpha-read{font-family:var(--f-mono);font-size:1.3rem;color:var(--title);min-width:3.4em;text-align:right}
+input[type=range]{width:min(320px,60vw);accent-color:var(--safe)}
+.board{display:grid;gap:.45rem;justify-items:center}
+.brow{display:grid;grid-template-columns:10.5rem auto 3.6rem;gap:.7rem;align-items:center}
+.brow .who{font-size:.85rem;text-align:right;color:var(--title);display:flex;justify-content:flex-end;align-items:center;gap:.4rem}
+.brow .tally{font-family:var(--f-mono);font-size:.85rem;color:var(--title)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:2px}
+.sw.cos{background:var(--cos)} .sw.safe{background:var(--safe)}
+.cells{display:flex;gap:3px;flex-wrap:wrap}
+.cells .gap{width:9px}
+.cell{width:19px;height:23px;border:0;border-radius:3px;padding:0;cursor:pointer;display:grid;place-items:center;color:#fff;font-size:.66rem;font-family:var(--f-mono);line-height:1}
+.cell.pass{background:var(--good)}
+.cell.vac{background:#fff;box-shadow:inset 0 0 0 1.5px var(--good);color:var(--good)}
+.cell.fail{background:var(--bad)}
+.cell.sel{outline:2px solid var(--title);outline-offset:2px}
+.groups{display:grid;grid-template-columns:10.5rem auto 3.6rem;gap:.7rem}
+.groups .g{display:flex;gap:3px;font-family:var(--f-mono);font-size:.68rem;color:var(--muted)}
+.bkey{display:flex;flex-wrap:wrap;justify-content:center;gap:.3rem 1.1rem;font-size:.78rem;color:var(--muted)}
+.bkey span{display:inline-flex;gap:.35rem;align-items:center}
+.bkey .cell{width:13px;height:15px;cursor:default;font-size:.55rem}
+.two-col{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.3fr);gap:1.5rem;align-items:start}
+.two-col>*{min-width:0}
+.ctitle{font-family:var(--f-title);font-size:.95rem;color:var(--title);text-align:center;margin-bottom:.3rem}
+.ctitle small{display:block;font-family:var(--f-body);font-size:.78rem;color:var(--muted)}
+.mp{display:grid;gap:.35rem}
+.mp-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.3rem .9rem}
+.mp-head h3{font-size:.98rem;display:flex;align-items:center;gap:.4rem}
+.reads{display:flex;flex-wrap:wrap;gap:.25rem .9rem;font-size:.8rem;color:var(--muted);align-items:center}
+.reads .num{color:var(--title);font-size:.88rem}
+.badge{font-family:var(--f-mono);font-size:.72rem;padding:.08rem .55rem;border-radius:999px}
+.badge.ok{color:var(--good);box-shadow:inset 0 0 0 1px var(--good)}
+.badge.no{color:#fff;background:var(--bad)}
+.badge.vac{color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+svg .bt-cos{fill:var(--cos)} svg .bt-safe{fill:var(--safe)} svg .bf{fill:var(--bad)} svg .faint{opacity:.22}
+svg .edge{stroke:#9A9A9A;stroke-width:1;stroke-dasharray:2 3}
+svg .tau-cos{stroke:var(--cos);stroke-width:2} svg .tau-safe{stroke:var(--safe);stroke-width:2}
+svg .zero{stroke:#7A7A7A;stroke-width:1}
+svg .target{stroke:#555;stroke-width:1.5;stroke-dasharray:5 4;fill:none}
+svg .viol{fill:var(--bad);opacity:.07}
+svg .ln-cos{stroke:var(--cos);stroke-width:2;fill:none} svg .ln-safe{stroke:var(--safe);stroke-width:2;fill:none}
+svg .dot-cos{fill:var(--cos);stroke:#fff;stroke-width:2} svg .dot-safe{fill:var(--safe);stroke:#fff;stroke-width:2}
+svg .hollow{fill:#fff!important} svg .hollow.dot-cos{stroke:var(--cos)} svg .hollow.dot-safe{stroke:var(--safe)}
+svg .cursor{stroke:#363636;stroke-width:1;opacity:.35}
+
+/* ---------- mechanism ---------- */
+.mech{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1.4rem;align-items:start}
+.mech>*{min-width:0}
+.mech-a{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem 1rem}
+.sub-label{font-family:var(--f-title);font-size:.95rem;color:var(--title);margin-bottom:.2rem}
+
+/* ---------- decision viewer ---------- */
+.viewer{display:grid;grid-template-columns:12.5rem minmax(0,1fr);gap:1.25rem;align-items:start}
+.viewer>*{min-width:0}
+.cases{display:grid;gap:.45rem}
+.case{display:grid;grid-template-columns:50px minmax(0,1fr);gap:.55rem;align-items:center;text-align:left;padding:.35rem;border:1px solid var(--rule);
+  background:#fff;border-radius:5px;cursor:pointer;font:inherit;color:var(--title)}
+.case img{width:50px;height:38px;object-fit:cover;border-radius:2px;display:block}
+.case .t{font-size:.76rem;line-height:1.3;display:grid;min-width:0}
+.case .t span{color:var(--muted)}
+.case[aria-pressed="true"]{border-color:var(--link);box-shadow:0 0 0 1px var(--link)}
+.vtop{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;font-size:.85rem}
+.toggle{display:inline-flex;gap:.4rem;align-items:center;cursor:pointer;color:var(--title)}
+.toggle input{accent-color:var(--link)}
+.verdict{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem 1.5rem;margin-top:1rem}
+.verdict>*{min-width:0}
+.vk{font-size:.75rem;color:var(--muted);font-family:var(--f-mono)}
+.vv{font-family:var(--f-mono);font-size:1rem;color:var(--title)}
+.vv small{font-size:.75rem;color:var(--muted)}
+.outcome{font-family:var(--f-title);font-size:1.15rem;font-weight:500}
+.outcome.good{color:var(--good)} .outcome.bad{color:var(--bad)} .outcome.miss{color:var(--warn)}
+.explain{grid-column:1/-1;font-size:.92rem}
+
+/* ---------- trajectories ---------- */
+.traj{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem}
+.traj>div{min-width:0}
+.trajhead{display:flex;justify-content:center;align-items:center;gap:.7rem;flex-wrap:wrap}
+.tcap{text-align:center;margin-bottom:.35rem}
+.tcap b{display:block;font-family:var(--f-title);font-weight:500;color:var(--title);font-size:.98rem}
+.tcap b.ours{color:var(--safe)}
+.tcap span{display:block;font-family:var(--f-mono);font-size:.74rem;color:var(--muted);line-height:1.4}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto;background:#fff;border:1px solid var(--rule);border-radius:6px}
+table.res{border-collapse:collapse;width:100%;min-width:640px;font-size:.86rem;font-variant-numeric:tabular-nums}
+table.res th,table.res td{padding:.38rem .6rem;text-align:right;white-space:nowrap}
+table.res th:first-child,table.res td:first-child{text-align:left}
+table.res thead th{font-family:var(--f-title);font-weight:500;color:var(--title);border-bottom:1px solid var(--title)}
+table.res thead tr:first-child th{border-bottom:1px solid var(--rule)}
+table.res .blk td{font-style:italic;color:var(--muted);padding-top:.7rem;text-align:left}
+table.res tr.ours td{font-weight:700;color:var(--title)}
+table.res td.f1{background:rgba(198,40,40,.08)} table.res td.f2{background:rgba(198,40,40,.18)} table.res td.f3{background:rgba(198,40,40,.32)}
+table.res tbody tr:last-child td{border-bottom:1px solid var(--title)}
+
+.limits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem 1.6rem}
+.limits>div{min-width:0}
+.limits h3{margin-bottom:.25rem}
+.limits p{font-size:.93rem}
+pre.bib{margin:0;background:var(--band);border-radius:4px;padding:1.1rem 1.25rem;overflow-x:auto;font-family:var(--f-mono);font-size:.82rem;line-height:1.55;color:var(--title)}
+.bibhead{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.copy{font:inherit;font-size:.85rem;background:#fff;border:1px solid var(--rule);border-radius:999px;padding:.25rem .9rem;cursor:pointer;color:var(--title)}
+footer{padding-block:2.5rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));text-align:center;font-size:.82rem;color:var(--muted)}
+footer .container{gap:.5rem}
+.loading{text-align:center;color:var(--muted);font-size:.9rem}
+
+@media (max-width:900px){
+  .pipe{grid-template-columns:minmax(0,1fr)}
+  .arrow{display:none}
+  .two-col,.mech,.viewer{grid-template-columns:minmax(0,1fr)}
+  .cases{grid-template-columns:repeat(auto-fill,minmax(11.5rem,1fr))}
+  .traj{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .brow,.groups{grid-template-columns:minmax(0,1fr) 3rem}
+  .brow .who{grid-column:1/-1;justify-content:flex-start}
+  .groups{display:none}
+  .verdict,.limits{grid-template-columns:minmax(0,1fr)}
+  .mech-a{grid-template-columns:minmax(0,1fr)}
+  .panel{padding:.9rem}
+}
+</style>
+
+</head>
+<body>
+<section class="section" style="padding-bottom:0">
+ <div class="container">
+  <div class="pub">
+    <h1><span class="dnerf">SafeVPR</span>: Patch-Based Verification with Empirical FDR Control for Cross-Condition Sequence Visual Place Recognition</h1>
+    <div class="aff"><a href="https://tiers.utu.fi" target="_blank" rel="noopener">Turku Intelligent Embedded and Robotic Systems (TIERS) Lab</a>, University of Turku, Finland</div>
+    <div class="venue">IEEE Robotics and Automation Letters (RA-L) 2026</div>
+    <div class="links">
+      <a class="pill" href="https://arxiv.org/abs/2605.28048" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1h7l3 3v11H3zM9.5 1.5V4.5h3"/></svg>Paper</a>
+      <a class="pill" href="https://arxiv.org/abs/2605.28048" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h3.2l2.8 4.3L10.8 2H14L9.6 8.3 14 14h-3.2L8 10.1 5.2 14H2l4.4-5.7z"/></svg>arXiv</a>
+      <a class="pill" href="#video"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 3.5C1 2.7 1.7 2 2.5 2h11c.8 0 1.5.7 1.5 1.5v9c0 .8-.7 1.5-1.5 1.5h-11C1.7 14 1 13.3 1 12.5zM6.5 5.5v5l4-2.5z" fill-rule="evenodd"/></svg>Video</a>
+      <a class="pill" href="https://github.com/Hasar12138/SafeVPR" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.5 7.5 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.6 4 .3.3.5.8.5 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>Code</a>
+      <a class="pill" href="https://github.com/Hasar12138/SafeVPR/tree/main/docs/paper_supplement" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1C4.1 1 1 2.1 1 3.5v9C1 13.9 4.1 15 8 15s7-1.1 7-2.5v-9C15 2.1 11.9 1 8 1zm0 1.5c3.3 0 5.5.9 5.5 1s-2.2 1-5.5 1-5.5-.9-5.5-1 2.2-1 5.5-1zm5.5 10c0 .1-2.2 1-5.5 1s-5.5-.9-5.5-1V5.4c1.3.7 3.3 1.1 5.5 1.1s4.2-.4 5.5-1.1z"/></svg>Supplement</a>
+      <a class="pill" href="#BibTeX"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h5v5H4.5c0 1.6.8 2.6 2.5 3v2C3.7 12.6 2 10.6 2 7.5zm7 0h5v5h-2.5c0 1.6.8 2.6 2.5 3v2c-3.3-.4-5-2.4-5-5.5z"/></svg>BibTeX</a>
+    </div>
+  </div>
+ </div>
+</section>
+
+<section class="section teaser" style="padding-top:1.5rem">
+ <div class="container">
+  <video id="heroVid" src="assets/hero_loop.mp4" poster="assets/hero_poster.jpg" muted loop playsinline autoplay preload="auto" aria-label="Pose-graph relocalization without gating and with SafeVPR gating"></video>
+  <p class="sub"><span class="dnerf">SafeVPR</span> accepts a place-recognition match only when its error rate is controlled on conditions it never saw.
+    <small>Oxford RobotCar, rain, real stereo odometry. Left: every retrieved match becomes a loop closure. Right: only the matches SafeVPR accepts at α = 0.10.</small></p>
+ </div>
+</section>
+
+<section class="section">
+ <div class="container">
+  <h2 class="title">Abstract</h2>
+  <p class="justify">Sequence-based visual place recognition (VPR) for loop closure and robot relocalization must decide whether the retrieved top-1 candidate should be accepted. Conformal calibration can set this accept/reject threshold, but its finite-sample guarantees require exchangeability between calibration and deployment, a requirement that cross-condition deployment violates. We therefore claim no formal guarantee under condition shift; this paper instead asks which verification score and calibration design keep a target false-discovery rate (FDR) <em>empirically</em> satisfied across realistic appearance change. We present SafeVPR, a non-trainable pipeline that replaces the backbone cosine similarity with a mutual-nearest-neighbour (MNN) patch score from frozen DINOv2 features, and flat Learn-Then-Test (LTT) calibration with Mondrian LTT (per-bin Bonferroni-corrected thresholds). Across 23 cross-condition ground-vehicle setups (Oxford RobotCar, NCLT, St Lucia; three frozen backbones), SafeVPR meets the FDR target on 23/23 setups at α = 0.10 (mean accepted FDR 0.014, mean TPR 0.75) and on 22/23 at α = 0.05 with 22 retaining non-trivial coverage (best cosine variant: 22/23 valid but 17 non-trivial); under leave-one-dataset-out calibration, validity drops to 20/23 with 14 retaining useful coverage (strongest cosine baseline: 16/23 and 10), and on texture-poor scenery (Nordland) the verifier is uninformative and the system abstains entirely; we report both as limitations. In a pose-graph relocalization study, gating loop-closure constraints reduces erroneous constraints by 29.6× and cuts the median trajectory error from 95.5 m to 9.7 m.</p>
+ </div>
+</section>
+
+<section class="section" id="video" style="padding-top:0">
+ <div class="container">
+  <h2 class="title">Video</h2>
+  <video class="full" src="assets/safevpr_video_720p.mp4" poster="assets/video_poster.jpg" controls preload="metadata" playsinline aria-label="SafeVPR video, 2 minutes 50 seconds"></video>
+ </div>
+</section>
+
+<section class="section" id="method" style="padding-top:0">
+ <div class="container wide">
+  <h2 class="title">Method</h2>
+  <div class="pipe" id="pipe">
+    <div class="stage s1"><span class="tag">Stage 1 · Black-box retrieval</span>
+      <div class="stack"><img src="assets/gallery/pipeline_seq0.jpg" alt="" style="left:0;top:0"><img src="assets/gallery/pipeline_seq1.jpg" alt="" style="left:9%;top:18px"><img src="assets/gallery/oxford_night_cosplace__acc_ok_q.jpg" alt="Query frame at night" style="left:18%;top:36px"></div>
+      <div class="bb"><b>Frozen backbone + diagonal DTW</b><br>NetVLAD · CosPlace · D²-VPR</div>
+      <p class="desc">A 10-frame query sequence retrieves a top-1 candidate. Its cosine score is discarded.</p>
+      <i class="arrow" aria-hidden="true"></i></div>
+    <div class="stage s2"><span class="tag">Stage 2 · Patch verifier (ours)</span>
+      <div class="pair" id="pipePair">
+        <div><img id="pipeQ" src="assets/gallery/oxford_night_cosplace__acc_ok_q.jpg" alt="Query, night"><div class="cap">query · night</div></div>
+        <div><img id="pipeC" src="assets/gallery/oxford_night_cosplace__acc_ok_c.jpg" alt="Candidate, day"><div class="cap">top-1 candidate · day</div></div>
+        <canvas id="pipeCanvas" aria-hidden="true"></canvas>
+      </div>
+      <p class="score-eq" id="pipeEq">s = matched patches / 256</p>
+      <p class="desc">Frozen DINOv2 patch tokens are matched by mutual nearest neighbour with a Lowe ratio test. The bounded score s ∈ [0, 1] is the surviving fraction, averaged over the sequence.</p>
+      <i class="arrow" aria-hidden="true"></i></div>
+    <div class="stage s3"><span class="tag">Stage 3 · Mondrian calibrator (ours)</span>
+      <svg class="chart" id="pipeHist" viewBox="0 0 300 150" role="img" aria-label="Calibration score histogram with per-bin thresholds"></svg>
+      <div class="decision"><span class="chip acc" id="pipeChip">ACCEPT</span><span class="num" id="pipeRule" style="font-size:.82rem"></span></div>
+      <p class="desc">Calibration scores from other conditions are split into 5 quantile bins. Each bin gets its own Bonferroni-corrected LTT threshold τ<sub>b</sub>; a bin with no safe threshold abstains.</p></div>
+  </div>
+  <p class="figure-caption">Every image and number above is real: an Oxford night query, its day candidate with the patch matches that survive, and the calibration histogram (grey: true matches, red: false matches) with its per-bin thresholds at α = 0.10.</p>
+ </div>
+</section>
+
+<section class="section band" id="budget">
+ <div class="container wide">
+  <h2 class="title">Try it: set an error budget</h2>
+  <p class="howto">Choose a target false-discovery rate α and a held-out deployment. Both methods use the same Mondrian calibrator, fitted on the other conditions of the same backbone, so the only difference is the score. Click any cell of the board to inspect that setup.</p>
+  <div class="panel" style="display:grid;gap:1.3rem" id="inst1">
+    <div class="controls">
+      <div class="ctl"><label for="alpha">Target FDR α</label><output class="alpha-read" id="alphaOut" for="alpha">0.10</output><input type="range" id="alpha" min="0" max="19" step="1" value="9"></div>
+      <div class="ctl"><label for="setup">Held-out deployment</label><select id="setup"></select></div>
+    </div>
+    <div class="board" aria-label="Validity across all 23 setups">
+      <div class="groups" aria-hidden="true"><span></span><div class="g" id="groups"></div><span></span></div>
+      <div class="brow"><span class="who"><i class="sw cos"></i>cosine + Mondrian</span><div class="cells" id="cellsCos"></div><span class="tally" id="tallyCos"></span></div>
+      <div class="brow"><span class="who"><i class="sw safe"></i>SafeVPR</span><div class="cells" id="cellsSafe"></div><span class="tally" id="tallySafe"></span></div>
+      <div class="bkey"><span><i class="cell pass">✓</i>FDR ≤ α</span><span><i class="cell vac">○</i>FDR ≤ α by abstaining (coverage ≤ 5%)</span><span><i class="cell fail">✕</i>FDR &gt; α</span></div>
+    </div>
+    <div class="two-col">
+      <div>
+        <p class="ctitle">Realized FDR across budgets<small id="fdrSub"></small></p>
+        <svg class="chart" id="fdrChart" viewBox="0 0 420 290" role="img" aria-label="Realized FDR versus target alpha"></svg>
+        <div class="legend" style="margin-top:.4rem"><span><i style="background:var(--cos)"></i>cosine + Mondrian</span><span><i style="background:var(--safe)"></i>SafeVPR</span><span><i style="height:0;border-top:2px dashed #555"></i>FDR = α</span><span><i style="background:var(--bad);opacity:.2"></i>over budget</span></div>
+      </div>
+      <div style="display:grid;gap:1rem">
+        <div class="mp" id="mpCos"></div>
+        <div class="mp" id="mpSafe"></div>
+        <div class="legend"><span><i style="background:#777"></i>above axis: true matches</span><span><i style="background:var(--bad)"></i>below: false matches</span><span>solid = accepted · pale = abstained</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="figure-caption">Default view: St Lucia with NetVLAD, the one setup where cosine + Mondrian exceeds α = 0.10 in the paper's Table I. Counts are computed with the paper's protocol and reproduce Table I exactly at α = 0.05 and 0.10.</p>
+ </div>
+</section>
+
+<section class="section" id="mechanism">
+ <div class="container wide">
+  <h2 class="title">Why the patch score transfers</h2>
+  <p class="howto">Mondrian calibration transfers a per-bin error map. It stays valid as long as the false-match rate inside each score bin is the same at deployment, however far the scores themselves move.</p>
+  <div class="mech">
+    <div>
+      <p class="sub-label">(a) Oxford night, D²-VPR backbone</p>
+      <div class="mech-a" id="mechA"></div>
+      <div class="legend" style="margin-top:.3rem"><span><i style="background:var(--cal)"></i>calibration (other conditions)</span><span><i style="background:var(--cos)"></i><i style="background:var(--safe);margin-left:-.25rem"></i>deployment (night)</span></div>
+    </div>
+    <div>
+      <p class="sub-label">(b) Drift of the per-bin false rate, all 23 setups</p>
+      <svg class="chart" id="mechB" viewBox="0 0 330 270" role="img" aria-label="Exceedance curves of conditional false-rate drift"></svg>
+    </div>
+  </div>
+  <p class="figure-caption">(a) At night the cosine score collapses into its two lowest bins, whose calibrated error rates no longer describe it; the patch score keeps both density and per-bin false rate aligned. (b) Number of setups whose occupancy-weighted drift exceeds each level (left is better): median drift is 3.7× lower for the patch score.</p>
+ </div>
+</section>
+
+<section class="section band" id="decision">
+ <div class="container wide">
+  <h2 class="title">Try it: open one decision</h2>
+  <p class="howto">Seven real decisions at α = 0.10. Lines connect the patch pairs that survive mutual-nearest-neighbour matching on the centre frame of the sequence; hover a line to isolate it.</p>
+  <div class="panel">
+    <div class="viewer">
+      <div class="cases" id="cases" role="group" aria-label="Decision cases"></div>
+      <div>
+        <div class="pair" id="decPair">
+          <div><img id="imgQ" alt="Query frame"><div class="cap" id="capQ"></div></div>
+          <div><img id="imgC" alt="Retrieved candidate"><div class="cap" id="capC"></div></div>
+          <canvas id="decCanvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="vtop"><label class="toggle"><input type="checkbox" id="showMatches" checked> Show patch matches</label><span id="matchCount" style="color:var(--muted)"></span></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<section class="section" id="closed-loop">
+ <div class="container wide">
+  <h2 class="title">Closed-loop relocalization</h2>
+  <p class="howto">Every accepted match enters a pose graph as a 5 m position prior, on odometry from each dataset's real sensor stream (Oxford stereo VO, NCLT wheel and fibre-optic gyro, St Lucia profile VO). Pick any of the 23 setups.</p>
+  <div class="trajhead"><label for="trajSel" style="font-family:var(--f-title);color:var(--title)">Setup</label><select id="trajSel"></select></div>
+  <div class="traj" id="traj"><p class="loading">Loading trajectories…</p></div>
+  <div class="legend"><span><i style="height:0;border-top:2px dashed #8A8A8A"></i>ground truth</span><span><i style="background:var(--safe);height:3px"></i>optimized trajectory</span><span><i style="background:var(--good);border-radius:50%;width:9px;height:9px"></i>correct loop closure</span><span style="color:var(--bad);font-weight:700">×</span><span style="margin-left:-.9rem">erroneous loop closure</span></div>
+  <p class="figure-caption">Across all 23 setups the gate cuts erroneous constraints from 5952 to 201 (29.6× fewer) and median trajectory error from 95.5 m to 9.7 m. On three NCLT setups with very accurate odometry, a few residual false accepts still hurt; a standard Huber kernel repairs them.</p>
+ </div>
+</section>
+
+<section class="section band" id="results">
+ <div class="container wide">
+  <h2 class="title">Results across 23 setups</h2>
+  <p class="howto">The held-out condition is never seen in calibration. Pass: empirical FDR ≤ α. Non-tr.: additionally coverage &gt; 5%. Red tint deepens with failure severity.</p>
+  <div class="tablewrap"><table class="res" id="resTable"></table></div>
+ </div>
+</section>
+
+<section class="section" id="limits">
+ <div class="container">
+  <h2 class="title">Limitations</h2>
+  <div class="limits">
+    <div><h3>Repetitive scenery</h3><p>On Nordland's forests and snow the patch score is no better than chance (AUROC 0.52). The calibrator detects this and accepts 0 of 9657 queries: the FDR target holds only vacuously and the robot gets no localization there.</p></div>
+    <div><h3>An unseen dataset</h3><p>Calibrating on the other datasets keeps 20 of 23 setups valid, 14 with useful coverage. The three failures share one cause: urban calibration opens the lowest score bin, and NCLT's foliage floods it. A small target-domain calibration slice closes the gap.</p></div>
+    <div><h3>Very strict budgets</h3><p>At α = 0.01 every setup abstains for both methods: about 1.5k calibration queries over 5 bins cannot push the bounds that low. Plan for α ≥ 0.05, or roughly 10× more calibration data.</p></div>
+    <div><h3>Ground vehicles only</h3><p>All validation uses forward-facing cameras on ground vehicles at 1 to 5 m/s. Aerial, legged and humanoid platforms change the viewpoint geometry and need their own calibration.</p></div>
+  </div>
+ </div>
+</section>
+
+<section class="section" id="BibTeX" style="padding-top:0">
+ <div class="container">
+  <div class="bibhead"><h2 class="title" style="text-align:left">BibTeX</h2><button class="copy" id="copyBib" type="button">Copy</button></div>
+<pre class="bib" id="bib">@article{sier2026safevpr,
+  title   = {{SafeVPR}: Patch-Based Verification with Empirical {FDR} Control
+             for Cross-Condition Sequence Visual Place Recognition},
+  author  = {Sier, Ha and Zhang, Jiaqiang and Zou, Zhuo and Yu, Xianjia and Westerlund, Tomi},
+  journal = {IEEE Robotics and Automation Letters},
+  year    = {2026},
+  eprint  = {2605.28048},
+  archivePrefix = {arXiv}
+}</pre>
+ </div>
+</section>
+
+<footer>
+ <div class="container">
+  <p>This research is supported by the Research Council of Finland's Digital Waters (DIWA) flagship (Grant No. 359247) and the DIWA Doctoral Training Pilot project funded by the Ministry of Education and Culture (Finland).</p>
+  <p>Page layout follows the <a href="https://github.com/nerfies/nerfies.github.io" target="_blank" rel="noopener">Nerfies</a> project-page template.</p>
+ </div>
+</footer>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (parent) parent.appendChild(n); return n; };
+const txt = (parent, attrs, s) => { const t = el('text', attrs, parent); t.textContent = s; return t; };
+const f2 = x => x == null ? '—' : x.toFixed(2);
+const tip = $('tip');
+const showTip = (e, html) => { tip.innerHTML = html; tip.hidden = false; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; };
+const hideTip = () => { tip.hidden = true; };
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const hv = $('heroVid');
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { hv.removeAttribute('autoplay'); hv.pause(); hv.controls = true; }
+
+$('copyBib').addEventListener('click', () => {
+  const b = $('copyBib');
+  const sel = () => { const r = document.createRange(); r.selectNodeContents($('bib')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected: press Ctrl+C'; };
+  if (navigator.clipboard) navigator.clipboard.writeText($('bib').textContent).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1600); }, sel); else sel();
+});
+
+const METHODS = [{ key: 'cosine', name: 'cosine + Mondrian', cls: 'cos' }, { key: 'safevpr', name: 'SafeVPR', cls: 'safe' }];
+const KIND = {
+  acc_ok: { out: 'Accepted · correct match', cls: 'good' }, acc_bad: { out: 'Accepted · false match', cls: 'bad' },
+  rej_alias: { out: 'Abstained · false match avoided', cls: 'good' }, rej_ok: { out: 'Abstained · correct match missed', cls: 'miss' },
+};
+const DS = ['Oxford', 'NCLT', 'St Lucia'], BB = ['NetVLAD', 'CosPlace', 'D²-VPR'];
+const order = (a, b) => DS.indexOf(a.dataset) - DS.indexOf(b.dataset) || BB.indexOf(a.backbone) - BB.indexOf(b.backbone) || a.condition.localeCompare(b.condition);
+const label = s => `${s.dataset} · ${s.condition} · ${s.backbone}`;
+
+let D, setups, alphas, ai = 9, sid = 'st_lucia_netvlad', ci = 0;
+const decoded = {};
+const samples = (s, k) => decoded[s.id + k] || (decoded[s.id + k] = { s: Float64Array.from(s.methods[k].s, v => v / 1e7), y: Uint8Array.from(s.methods[k].y, c => c === '1' ? 1 : 0), acc: Int32Array.from(s.methods[k].acc) });
+const row = (s, k) => s.methods[k].sweep[ai];
+const verdict = r => !r.valid ? 'fail' : r.cov <= 0.05 ? 'vac' : 'pass';
+
+fetch('data.json').then(r => r.json()).then(data => {
+  D = data; alphas = D.alphas; setups = D.setups.slice().sort(order);
+  initPipeline(); initBudget(); initMech(); initCases(); initTable();
+  return fetch('traj.json').then(r => r.json()).then(initTraj);
+}).catch(err => {
+  console.error(err);
+  $('inst1').insertAdjacentHTML('afterbegin', '<p class="loading">The interactive data could not be loaded. Open this page from a web server rather than as a local file.</p>');
+});
+
+/* ---------- shared: patch-match overlay on an image pair ---------- */
+function drawPairMatches(wrap, imgQ, imgC, canvas, matches, opts = {}) {
+  const wr = wrap.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  canvas.width = Math.round(wr.width * dpr); canvas.height = Math.round(wr.height * dpr);
+  canvas.style.width = wr.width + 'px'; canvas.style.height = wr.height + 'px';
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, wr.width, wr.height);
+  if (opts.hidden) return;
+  const rq = imgQ.getBoundingClientRect(), rc = imgC.getBoundingClientRect();
+  if (!rq.width || !rc.width) return;
+  const col = opts.color || css('--safe');
+  const pt = (r, i) => ({ x: r.left - wr.left + ((i % 16) + .5) / 16 * r.width, y: r.top - wr.top + (Math.floor(i / 16) + .5) / 16 * r.height, w: r.width / 16, h: r.height / 16 });
+  const sims = matches.map(m => m[2]), lo = Math.min(...sims), hi = Math.max(...sims);
+  let hot = -1;
+  if (opts.hover) {
+    let best = 1e9; const px = opts.hover.x - wr.left, py = opts.hover.y - wr.top;
+    matches.forEach((m, i) => { const a = pt(rq, m[0]), b = pt(rc, m[1]); const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy || 1;
+      const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / L2)); const d = Math.hypot(px - a.x - t * dx, py - a.y - t * dy); if (d < best) { best = d; hot = i; } });
+    if (best > 14) hot = -1;
+  }
+  matches.forEach((m, i) => {
+    const a = pt(rq, m[0]), b = pt(rc, m[1]), w = hi > lo ? (m[2] - lo) / (hi - lo) : 1;
+    ctx.globalAlpha = hot >= 0 && i !== hot ? .12 : hot === i ? 1 : .45 + .5 * w;
+    ctx.strokeStyle = col; ctx.lineWidth = hot === i ? 2.5 : 1.1;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.strokeRect(a.x - a.w / 2, a.y - a.h / 2, a.w, a.h); ctx.strokeRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
+  });
+  ctx.globalAlpha = 1;
+  if (hot >= 0) { const a = pt(rq, matches[hot][0]); const s = `patch similarity ${matches[hot][2].toFixed(3)}`;
+    ctx.font = '500 12px "Noto Sans Mono", monospace'; const tw = ctx.measureText(s).width + 10;
+    ctx.fillStyle = '#222'; ctx.fillRect(a.x + 8, a.y - 22, tw, 18); ctx.fillStyle = '#fff'; ctx.fillText(s, a.x + 13, a.y - 9); }
+}
+
+/* ---------- Method figure ---------- */
+function initPipeline() {
+  const c = D.gallery.find(g => g.id === 'oxford_night_cosplace__acc_ok'), P = D.pipeline;
+  $('pipeEq').innerHTML = `${c.matches.length} / 256 matched on this frame &nbsp;·&nbsp; s = ${c.s.toFixed(3)} over the sequence`;
+  const redraw = () => drawPairMatches($('pipePair'), $('pipeQ'), $('pipeC'), $('pipeCanvas'), c.matches, { color: '#E69F00' });
+  $('pipeQ').addEventListener('load', redraw); $('pipeC').addEventListener('load', redraw);
+  new ResizeObserver(redraw).observe($('pipePair'));
+  // stage 3 histogram
+  const svg = $('pipeHist'), W = 300, H = 150, L = 6, R = 6, T = 26, B = 20, nb = P.true.length, hi = P.hi;
+  const x = v => L + v / hi * (W - L - R), mx = Math.max(...P.true.map((t, i) => t + P.false[i]));
+  const bw = (W - L - R) / nb;
+  P.true.forEach((t, i) => {
+    const f = P.false[i], ht = t / mx * (H - T - B), hf = f / mx * (H - T - B), x0 = L + i * bw + .4;
+    el('rect', { x: x0, y: H - B - ht - hf, width: bw - 1, height: ht, style: 'fill:#9A9A9A' }, svg);
+    el('rect', { x: x0, y: H - B - hf, width: bw - 1, height: hf, style: 'fill:var(--bad);opacity:.85' }, svg);
+  });
+  el('line', { class: 'axis', x1: L, x2: W - R, y1: H - B, y2: H - B }, svg);
+  const bounds = [0, ...P.edges, hi];
+  for (let b = 0; b < 5; b++) {
+    const a0 = bounds[b], a1 = Math.min(hi, bounds[b + 1]), t = P.taus[b];
+    if (b > 0) el('line', { x1: x(a0), x2: x(a0), y1: 12, y2: H - B, style: 'stroke:#8A8A8A;stroke-width:1;stroke-dasharray:2 3' }, svg);
+    if (t == null) { el('rect', { x: x(a0), y: T - 2, width: x(a1) - x(a0), height: H - B - T + 2, style: 'fill:var(--bad);opacity:.08' }, svg);
+      txt(svg, { class: 'tick', x: (x(a0) + x(a1)) / 2, y: 22, 'text-anchor': 'middle', style: 'fill:var(--bad)' }, 'abstain'); }
+    else { el('line', { x1: x(Math.max(t, a0)), x2: x(a1), y1: 16, y2: 16, style: 'stroke:#009E73;stroke-width:2.5' }, svg);
+      el('line', { x1: x(t), x2: x(t), y1: 12, y2: H - B, style: 'stroke:#009E73;stroke-width:1.5' }, svg); }
+    txt(svg, { class: 'tick', x: (x(a0) + x(a1)) / 2, y: 8, 'text-anchor': 'middle' }, `B${b + 1}`);
+  }
+  txt(svg, { class: 'tick', x: L, y: H - 5 }, '0');
+  txt(svg, { class: 'tick', x: W - R, y: H - 5, 'text-anchor': 'end' }, hi.toFixed(2));
+  txt(svg, { class: 'tick', x: W / 2, y: H - 5, 'text-anchor': 'middle' }, `calibration scores (n = ${P.n_cal})`);
+  el('line', { x1: x(c.s), x2: x(c.s), y1: 10, y2: H - B, style: 'stroke:#363636;stroke-width:2' }, svg);
+  el('path', { d: `M${x(c.s) - 4},4 L${x(c.s) + 4},4 L${x(c.s)},10 Z`, style: 'fill:#363636' }, svg);
+  const tau = P.taus[c.bin - 1];
+  $('pipeRule').textContent = `s = ${c.s.toFixed(3)} ≥ τ${c.bin} = ${tau.toFixed(3)}`;
+}
+
+/* ---------- Budget instrument ---------- */
+function initBudget() {
+  try { const st = JSON.parse(localStorage.getItem('safevpr-ui') || '{}'); if (st.sid && setups.some(s => s.id === st.sid)) sid = st.sid; if (Number.isInteger(st.ai) && st.ai >= 0 && st.ai < 20) ai = st.ai; } catch (e) {}
+  const sel = $('setup'); let og, last;
+  for (const s of setups) { if (s.dataset !== last) { og = document.createElement('optgroup'); og.label = s.dataset; sel.appendChild(og); last = s.dataset; }
+    const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.condition} · ${s.backbone}`; og.appendChild(o); }
+  sel.value = sid; sel.addEventListener('change', () => { sid = sel.value; save(); renderBudget(); });
+  const a = $('alpha'); a.value = ai; a.addEventListener('input', () => { ai = +a.value; save(); renderBudget(); });
+  const g = $('groups'); let prev = null, n = 0;
+  const flush = () => { if (!prev) return; const s = document.createElement('span'); s.style.width = `${n * 22 - 3}px`; s.textContent = prev; g.appendChild(s); const sp = document.createElement('span'); sp.style.width = '9px'; g.appendChild(sp); };
+  for (const s of setups) { if (s.dataset !== prev) { flush(); prev = s.dataset; n = 0; } n++; } flush();
+  renderBudget();
+}
+const save = () => { try { localStorage.setItem('safevpr-ui', JSON.stringify({ sid, ai })); } catch (e) {} };
+
+function renderBudget() {
+  const s = setups.find(x => x.id === sid);
+  $('alphaOut').textContent = alphas[ai].toFixed(2); $('alpha').setAttribute('aria-valuetext', `alpha ${alphas[ai].toFixed(2)}`);
+  $('fdrSub').textContent = label(s);
+  for (const m of METHODS) {
+    const box = $(m.cls === 'cos' ? 'cellsCos' : 'cellsSafe'); box.textContent = ''; let ok = 0, prev = null;
+    for (const x of setups) {
+      if (prev && x.dataset !== prev) { const sp = document.createElement('span'); sp.className = 'gap'; box.appendChild(sp); } prev = x.dataset;
+      const r = row(x, m.key), v = verdict(r); if (v !== 'fail') ok++;
+      const b = document.createElement('button'); b.type = 'button'; b.className = `cell ${v}${x.id === sid ? ' sel' : ''}`; b.textContent = v === 'pass' ? '✓' : v === 'vac' ? '○' : '✕';
+      const ft = r.n_accept ? r.fdr.toFixed(3) : 'nothing accepted';
+      b.setAttribute('aria-label', `${m.name}, ${label(x)}: FDR ${ft}`);
+      b.addEventListener('click', () => { sid = x.id; $('setup').value = sid; save(); renderBudget(); });
+      b.addEventListener('mousemove', e => showTip(e, `${label(x)}<br>${m.name}: FDR ${ft} · TPR ${f2(r.tpr)}`)); b.addEventListener('mouseleave', hideTip);
+      box.appendChild(b);
+    }
+    $(m.cls === 'cos' ? 'tallyCos' : 'tallySafe').textContent = `${ok}/${setups.length}`;
+  }
+  fdrChart(s); for (const m of METHODS) panel(s, m);
+}
+
+function fdrChart(s) {
+  const svg = $('fdrChart'); svg.textContent = '';
+  const W = 420, H = 290, L = 46, R = 12, T = 12, B = 40;
+  const ymax = Math.max(.25, Math.ceil((Math.max(...METHODS.flatMap(m => s.methods[m.key].sweep.map(r => r.fdr || 0))) + .02) / .05) * .05);
+  const x = a => L + a / .2 * (W - L - R), y = v => H - B - v / ymax * (H - T - B);
+  el('polygon', { class: 'viol', points: `${x(0)},${y(0)} ${x(.2)},${y(.2)} ${x(.2)},${y(ymax)} ${x(0)},${y(ymax)}` }, svg);
+  for (let v = 0; v <= ymax + 1e-9; v += .05) { el('line', { class: 'grid', x1: L, x2: W - R, y1: y(v), y2: y(v) }, svg); txt(svg, { class: 'tick', x: L - 6, y: y(v) + 3.5, 'text-anchor': 'end' }, v.toFixed(2)); }
+  for (const a of [0, .05, .1, .15, .2]) txt(svg, { class: 'tick', x: x(a), y: H - B + 15, 'text-anchor': 'middle' }, a.toFixed(2));
+  el('line', { class: 'axis', x1: L, x2: W - R, y1: y(0), y2: y(0) }, svg);
+  txt(svg, { class: 'lab', x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle' }, 'target α');
+  txt(svg, { class: 'lab', x: 12, y: (T + H - B) / 2, 'text-anchor': 'middle', transform: `rotate(-90 12 ${(T + H - B) / 2})` }, 'realized FDR');
+  el('line', { class: 'target', x1: x(0), y1: y(0), x2: x(.2), y2: y(.2) }, svg);
+  txt(svg, { class: 'tick', x: x(.2) - 4, y: y(.2) - 6, 'text-anchor': 'end' }, 'FDR = α');
+  el('line', { class: 'cursor', x1: x(alphas[ai]), x2: x(alphas[ai]), y1: T, y2: y(0) }, svg);
+  for (const m of METHODS) el('polyline', { class: `ln-${m.cls}`, points: s.methods[m.key].sweep.map(r => `${x(r.alpha)},${y(r.fdr || 0)}`).join(' ') }, svg);
+  for (const m of METHODS) { const r = s.methods[m.key].sweep[ai]; el('circle', { class: `dot-${m.cls}${r.n_accept ? '' : ' hollow'}`, cx: x(r.alpha), cy: y(r.fdr || 0), r: 5.5 }, svg); }
+  const hit = el('rect', { class: 'hit', x: L, y: T, width: W - L - R, height: H - T - B, style: 'cursor:pointer' }, svg), pt = svg.createSVGPoint();
+  const idx = e => { pt.x = e.clientX; pt.y = e.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return Math.min(19, Math.max(0, Math.round((p.x - L) / (W - L - R) * 20) - 1)); };
+  hit.addEventListener('mousemove', e => { const a = idx(e); showTip(e, `α = ${alphas[a].toFixed(2)}<br>` + METHODS.map(m => { const r = s.methods[m.key].sweep[a]; return `${m.name}: FDR ${r.n_accept ? r.fdr.toFixed(3) : '— (none accepted)'} · TPR ${f2(r.tpr)}`; }).join('<br>')); });
+  hit.addEventListener('mouseleave', hideTip);
+  hit.addEventListener('click', e => { ai = idx(e); $('alpha').value = ai; save(); renderBudget(); });
+}
+
+function panel(setup, m) {
+  const box = $(m.cls === 'cos' ? 'mpCos' : 'mpSafe'), r = row(setup, m.key), v = verdict(r);
+  const badge = v === 'fail' ? '<span class="badge no">✕ over budget</span>' : v === 'vac' ? '<span class="badge vac">○ abstains</span>' : '<span class="badge ok">✓ within α</span>';
+  box.innerHTML = `<div class="mp-head"><h3><i class="sw ${m.cls}"></i>${m.name}</h3><div class="reads">${badge}<span>FDR <span class="num">${r.n_accept ? r.fdr.toFixed(3) : '—'}</span></span><span>TPR <span class="num">${r.tpr.toFixed(2)}</span></span><span>accepted <span class="num">${r.n_accept}/${r.n_total}</span></span></div></div>`;
+  const W = 560, H = 166, L = 6, R = 6, mid = 90, top = 22, bot = 148;
+  const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `${m.name} deployment scores at alpha ${alphas[ai].toFixed(2)}` }, box);
+  const { s, y, acc } = samples(setup, m.key), sorted = Float64Array.from(s).sort();
+  const lo = sorted[Math.floor(sorted.length * .005)], hi = sorted[Math.ceil(sorted.length * .995) - 1], nb = 56, bw = (hi - lo) / nb || 1e-6;
+  const inner = r.edges.map(e => e / 1e7), taus = r.taus.map(t => t == null ? null : t / 1e7);
+  const Hs = Array.from({ length: nb }, () => [0, 0, 0, 0]);
+  for (let i = 0; i < s.length; i++) { const b = Math.max(0, Math.min(nb - 1, Math.floor((s[i] - lo) / bw))); const a = (acc[i] >> ai) & 1; Hs[b][y[i] ? (a ? 0 : 1) : (a ? 2 : 3)]++; }
+  const mx = Math.max(1, ...Hs.map(h => Math.max(h[0] + h[1], h[2] + h[3]))), x = v => L + (v - lo) / (hi - lo) * (W - L - R), px = (W - L - R) / nb;
+  Hs.forEach((h, b) => {
+    const x0 = L + b * px + .5, w = Math.max(1, px - 1.5), u = mid - top, d = bot - mid;
+    const ta = h[0] / mx * u, tb = h[1] / mx * u, fa = h[2] / mx * d, fb = h[3] / mx * d;
+    if (tb) el('rect', { class: `bt-${m.cls} faint`, x: x0, y: mid - ta - tb, width: w, height: tb }, svg);
+    if (ta) el('rect', { class: `bt-${m.cls}`, x: x0, y: mid - ta, width: w, height: ta }, svg);
+    if (fb) el('rect', { class: 'bf faint', x: x0, y: mid + fa, width: w, height: fb }, svg);
+    if (fa) el('rect', { class: 'bf', x: x0, y: mid, width: w, height: fa }, svg);
+    const ht = el('rect', { class: 'hit', x: L + b * px, y: top, width: px, height: bot - top }, svg);
+    ht.addEventListener('mousemove', e => showTip(e, `score ${(lo + b * bw).toFixed(3)}–${(lo + (b + 1) * bw).toFixed(3)}<br>true: ${h[0]} accepted · ${h[1]} abstained<br>false: ${h[2]} accepted · ${h[3]} abstained`));
+    ht.addEventListener('mouseleave', hideTip);
+  });
+  el('line', { class: 'zero', x1: L, x2: W - R, y1: mid, y2: mid }, svg);
+  const bounds = [lo, ...inner.map(e => Math.min(hi, Math.max(lo, e))), hi];
+  inner.forEach(e => { if (e > lo && e < hi) el('line', { class: 'edge', x1: x(e), x2: x(e), y1: top - 4, y2: bot }, svg); });
+  for (let b = 0; b < 5; b++) {
+    const a0 = bounds[b], a1 = bounds[b + 1]; if (a1 <= a0) continue; const t = taus[b], wpx = x(a1) - x(a0);
+    if (t == null) txt(svg, { class: 'tick', x: (x(a0) + x(a1)) / 2, y: 12, 'text-anchor': 'middle' }, wpx > 54 ? `B${b + 1} abstains` : wpx > 18 ? `B${b + 1}` : '');
+    else { const tx = Math.max(a0, Math.min(a1, t)); el('line', { class: `tau-${m.cls}`, x1: x(tx), x2: x(a1), y1: 14, y2: 14 }, svg);
+      if (t > lo && t < hi) el('line', { class: `tau-${m.cls}`, x1: x(t), x2: x(t), y1: 9, y2: mid }, svg);
+      if (wpx > 22) txt(svg, { class: 'tick', x: (x(a0) + x(a1)) / 2, y: 8, 'text-anchor': 'middle' }, `B${b + 1}`); }
+  }
+  txt(svg, { class: 'tick', x: L, y: H - 2 }, lo.toFixed(2)); txt(svg, { class: 'tick', x: W - R, y: H - 2, 'text-anchor': 'end' }, hi.toFixed(2));
+  txt(svg, { class: 'tick', x: W / 2, y: H - 2, 'text-anchor': 'middle' }, m.key === 'cosine' ? 'cosine score' : 'patch-MNN score');
+}
+
+/* ---------- Mechanism (Fig. 2 redrawn) ---------- */
+function initMech() {
+  const M = D.mech, A = $('mechA');
+  const mk = (title, aria) => { const d = document.createElement('div'); const s = el('svg', { class: 'chart', viewBox: '0 0 260 170', role: 'img', 'aria-label': aria }, d); A.appendChild(d); txt(s, { class: 'ttl', x: 130, y: 13, 'text-anchor': 'middle' }, title); return s; };
+  for (const [k, nm, cls] of [['cosine', 'cosine', 'cos'], ['safevpr', 'patch-MNN', 'safe']]) {
+    const S = M.scores[k], col = cls === 'cos' ? 'var(--cos)' : 'var(--safe)';
+    // density panel
+    let svg = mk(`${nm}: score density`, `${nm} score density, calibration vs deployment`);
+    const L = 8, R = 8, T = 24, B = 30, W = 260, H = 170, n = S.dens_cal.length;
+    const x = v => L + (v - S.lo) / (S.hi - S.lo) * (W - L - R), ym = Math.max(...S.dens_cal, ...S.dens_dep), y = v => H - B - v / ym * (H - T - B);
+    S.edges.forEach(e => el('line', { x1: x(e), x2: x(e), y1: T, y2: H - B, style: 'stroke:#E2E2E2;stroke-width:1' }, svg));
+    const step = arr => arr.map((v, i) => { const a = S.lo + i * (S.hi - S.lo) / n, b = S.lo + (i + 1) * (S.hi - S.lo) / n; return `${x(a)},${y(v)} ${x(b)},${y(v)}`; }).join(' ');
+    el('polygon', { points: `${x(S.lo)},${y(0)} ${step(S.dens_cal)} ${x(S.hi)},${y(0)}`, style: 'fill:var(--cal);opacity:.35' }, svg);
+    el('polyline', { points: step(S.dens_dep), style: `fill:none;stroke:${col};stroke-width:1.8` }, svg);
+    el('line', { class: 'axis', x1: L, x2: W - R, y1: H - B, y2: H - B }, svg);
+    const ticks = cls === 'cos' ? [.25, .5, .75] : [.1, .2, .3];
+    ticks.filter(t => t > S.lo && t < S.hi).forEach(t => txt(svg, { class: 'tick', x: x(t), y: H - B + 13, 'text-anchor': 'middle' }, t.toFixed(2)));
+    txt(svg, { class: 'lab', x: W / 2, y: H - 3, 'text-anchor': 'middle' }, 'score (grey lines: bin edges)');
+    // per-bin false-rate panel
+    svg = mk(`${nm}: false-match rate per bin`, `${nm} per-bin false-match rate, calibration vs deployment`);
+    const L2 = 34, xb = i => L2 + (i + .5) * (W - L2 - R) / 5, yb = v => H - B - v * (H - T - B);
+    for (const v of [0, .25, .5, .75, 1]) { el('line', { class: 'grid', x1: L2, x2: W - R, y1: yb(v), y2: yb(v) }, svg); txt(svg, { class: 'tick', x: L2 - 5, y: yb(v) + 3.5, 'text-anchor': 'end' }, v.toFixed(2)); }
+    for (let i = 0; i < 5; i++) txt(svg, { class: 'tick', x: xb(i), y: H - B + 13, 'text-anchor': 'middle' }, `B${i + 1}`);
+    txt(svg, { class: 'lab', x: (L2 + W - R) / 2, y: H - 3, 'text-anchor': 'middle' }, 'score bin (low → high)');
+    const line = (arr, style, r) => { const pts = arr.map((v, i) => v == null ? null : [xb(i), yb(v)]).filter(Boolean);
+      el('polyline', { points: pts.map(p => p.join(',')).join(' '), style: `fill:none;${style}` }, svg);
+      pts.forEach(p => el('circle', { cx: p[0], cy: p[1], r, style: style.replace('stroke:', 'fill:').split(';')[0] + ';stroke:#fff;stroke-width:1.5' }, svg)); };
+    line(S.fr_cal, 'stroke:#8A8A8A;stroke-width:1.8', 3.8);
+    line(S.fr_dep, `stroke:${col};stroke-width:2`, 4.2);
+    for (let i = 0; i < 5; i++) { const h = el('rect', { class: 'hit', x: xb(i) - 18, y: T, width: 36, height: H - T - B }, svg);
+      h.addEventListener('mousemove', e => showTip(e, `${nm} · bin B${i + 1}<br>calibration false rate ${S.fr_cal[i].toFixed(3)}<br>deployment false rate ${S.fr_dep[i] == null ? '— (<10 queries)' : S.fr_dep[i].toFixed(3)}<br>deployment occupancy ${(S.occ_dep[i] * 100).toFixed(0)}%`));
+      h.addEventListener('mouseleave', hideTip); }
+  }
+  // (b) exceedance curves
+  const svg = $('mechB'), W = 330, H = 270, L = 40, R = 12, T = 12, B = 42, lo = 1.5e-3, hiX = .6, n = M.drift.length;
+  const x = v => L + (Math.log10(Math.max(v, lo)) - Math.log10(lo)) / (Math.log10(hiX) - Math.log10(lo)) * (W - L - R), y = c => H - B - c / n * (H - T - B);
+  for (const c of [0, 5, 10, 15, 20]) { el('line', { class: 'grid', x1: L, x2: W - R, y1: y(c), y2: y(c) }, svg); txt(svg, { class: 'tick', x: L - 6, y: y(c) + 3.5, 'text-anchor': 'end' }, c); }
+  for (const v of [.003, .01, .03, .1, .3]) txt(svg, { class: 'tick', x: x(v), y: H - B + 14, 'text-anchor': 'middle' }, v);
+  el('line', { class: 'axis', x1: L, x2: W - R, y1: y(0), y2: y(0) }, svg);
+  txt(svg, { class: 'lab', x: (L + W - R) / 2, y: H - 8, 'text-anchor': 'middle' }, 'per-bin false-rate drift (log scale)');
+  txt(svg, { class: 'lab', x: 11, y: (T + H - B) / 2, 'text-anchor': 'middle', transform: `rotate(-90 11 ${(T + H - B) / 2})` }, 'setups exceeding');
+  const curve = k => { const v = M.drift.map(d => d[k]).sort((a, b) => a - b); const pts = [[x(lo), y(n)]]; v.forEach((d, i) => { pts.push([x(d), y(n - i)], [x(d), y(n - i - 1)]); }); pts.push([x(hiX), y(0)]); return pts; };
+  const cc = curve('cosine'), cs = curve('safevpr');
+  el('polyline', { points: cc.map(p => p.join(',')).join(' '), style: 'fill:none;stroke:var(--cos);stroke-width:2' }, svg);
+  el('polyline', { points: cs.map(p => p.join(',')).join(' '), style: 'fill:none;stroke:var(--safe);stroke-width:2' }, svg);
+  for (const [k, col, dy] of [['cosine', 'var(--cos)', -1], ['safevpr', 'var(--safe)', 1]]) {
+    const md = M.median[k]; el('circle', { cx: x(md), cy: y(n / 2), r: 5, style: `fill:${col};stroke:#fff;stroke-width:1.5` }, svg);
+    txt(svg, dy < 0 ? { class: 'tick', x: x(md) + 8, y: y(n / 2) - 8, style: `fill:${col}` } : { class: 'tick', x: x(md) - 8, y: y(n / 2) + 15, 'text-anchor': 'end', style: `fill:${col}` }, `median ${md.toFixed(3)}`);
+  }
+  txt(svg, { class: 'lab', x: x(.12) + 8, y: y(21.2), style: 'fill:var(--cos)' }, 'cosine');
+  txt(svg, { class: 'lab', x: x(.006), y: y(17.5), 'text-anchor': 'end', style: 'fill:var(--safe)' }, 'patch-MNN');
+  const hit = el('rect', { class: 'hit', x: L, y: T, width: W - L - R, height: H - T - B }, svg), pt = svg.createSVGPoint();
+  hit.addEventListener('mousemove', e => { pt.x = e.clientX; pt.y = e.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const v = Math.pow(10, Math.log10(lo) + (p.x - L) / (W - L - R) * (Math.log10(hiX) - Math.log10(lo)));
+    const c1 = M.drift.filter(d => d.cosine > v).length, c2 = M.drift.filter(d => d.safevpr > v).length;
+    showTip(e, `drift &gt; ${v.toFixed(3)}<br>cosine: ${c1} setups<br>patch-MNN: ${c2} setups`); });
+  hit.addEventListener('mouseleave', hideTip);
+}
+
+/* ---------- Decision viewer ---------- */
+let hoverPt = null;
+function initCases() {
+  const list = $('cases');
+  D.gallery.forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'case'; b.setAttribute('aria-pressed', String(i === ci));
+    b.innerHTML = `<img src="assets/gallery/${c.id}_q.jpg" alt=""><span class="t"><b>${KIND[c.kind].out}</b><span>${label(c)}</span></span>`;
+    b.addEventListener('click', () => { ci = i; [...list.children].forEach((n, j) => n.setAttribute('aria-pressed', String(j === ci))); renderCase(); });
+    list.appendChild(b);
+  });
+  const redraw = () => drawPairMatches($('decPair'), $('imgQ'), $('imgC'), $('decCanvas'), D.gallery[ci].matches, { hidden: !$('showMatches').checked, hover: hoverPt });
+  $('showMatches').addEventListener('change', redraw); $('imgQ').addEventListener('load', redraw); $('imgC').addEventListener('load', redraw);
+  new ResizeObserver(redraw).observe($('decPair'));
+  $('decPair').addEventListener('mousemove', e => { hoverPt = { x: e.clientX, y: e.clientY }; redraw(); });
+  $('decPair').addEventListener('mouseleave', () => { hoverPt = null; redraw(); });
+  window.__redrawCase = redraw;
+  renderCase();
+}
+function renderCase() {
+  const c = D.gallery[ci], k = KIND[c.kind];
+  $('imgQ').src = `assets/gallery/${c.id}_q.jpg`; $('imgC').src = `assets/gallery/${c.id}_c.jpg`;
+  $('capQ').textContent = `query · ${c.condition}`; $('capC').textContent = `top-1 candidate · ${c.correct ? 'same place, ' + c.dist_m + ' m' : c.dist_m + ' m away'}`;
+  $('matchCount').textContent = `${c.matches.length} of 256 patches matched on this frame pair`;
+  const st = setups.find(s => s.id === c.id.split('__')[0]), r10 = st ? st.methods.safevpr.sweep[9] : null;
+  const tauTxt = c.tau == null ? 'no certified threshold, so the whole bin abstains' : `its threshold τ${c.bin} = ${c.tau.toFixed(3)}`;
+  const why = {
+    acc_ok: `Patch agreement s = ${c.s.toFixed(3)} lands in bin ${c.bin} and clears ${tauTxt}. The candidate is ${c.dist_m} m from the true pose.`,
+    acc_bad: `A false accept ${c.dist_m} m away: s = ${c.s.toFixed(3)} clears bin ${c.bin}'s threshold (${c.tau == null ? '—' : c.tau.toFixed(3)}) by a hair. The budget allows a few of these; on this setup the realized FDR at α = 0.10 is ${r10 ? r10.fdr.toFixed(3) : '—'}.`,
+    rej_alias: `A look-alike place ${c.dist_m} m away. Cosine scores it ${c.cosine.toFixed(2)}, but only ${c.matches.length} patches agree on this frame and s = ${c.s.toFixed(3)} falls in bin ${c.bin}, with ${tauTxt}.`,
+    rej_ok: `The candidate is the right place (${c.dist_m} m), but s = ${c.s.toFixed(3)} falls in bin ${c.bin}, with ${tauTxt}. Abstaining loses this fix and adds no error.`,
+  }[c.kind];
+  $('verdict').innerHTML = `<div><div class="vk">${label(c)}</div><div class="outcome ${k.cls}">${k.out}</div></div>
+    <div><div class="vk">scores</div><div class="vv">s = ${c.s.toFixed(3)} <small>patch-MNN</small> · ${c.cosine.toFixed(2)} <small>cosine (discarded)</small></div></div>
+    <div style="grid-column:1/-1"><div class="vk">Mondrian bins at α = 0.10, calibrated on the other conditions</div><div id="ladder"></div></div>
+    <p class="explain">${why}</p>`;
+  ladder(c); if (window.__redrawCase) window.__redrawCase();
+}
+function ladder(c) {
+  const svg = el('svg', { class: 'chart', viewBox: '0 0 600 66', role: 'img', 'aria-label': `score ${c.s} in bin ${c.bin}` }, $('ladder'));
+  const W = 600, L = 4, R = 4, hi = Math.max(.2, c.s * 1.25, c.edges[3] * 1.2), x = v => L + v / hi * (W - L - R), b = [0, ...c.edges, hi];
+  for (let i = 0; i < 5; i++) {
+    const x0 = x(b[i]), x1 = x(b[i + 1]), t = c.taus[i];
+    el('rect', { x: x0, y: 18, width: Math.max(0, x1 - x0 - 2), height: 16, rx: 2, style: 'fill:#EDEDED' }, svg);
+    if (t != null) el('rect', { x: x(Math.max(t, b[i])), y: 18, width: Math.max(0, x1 - x(Math.max(t, b[i])) - 2), height: 16, rx: 2, style: 'fill:#009E73' }, svg);
+    txt(svg, { class: 'tick', x: (x0 + x1) / 2, y: 12, 'text-anchor': 'middle' }, x1 - x0 < 60 ? `B${i + 1}` : t == null ? `B${i + 1} · abstain` : `B${i + 1} · τ ${t.toFixed(3)}`);
+  }
+  c.edges.forEach(e => txt(svg, { class: 'tick', x: x(e), y: 48, 'text-anchor': 'middle' }, e.toFixed(3)));
+  el('line', { x1: x(c.s), x2: x(c.s), y1: 14, y2: 38, style: 'stroke:#363636;stroke-width:2.2' }, svg);
+  txt(svg, { class: 'tick', x: x(c.s), y: 63, 'text-anchor': 'middle', style: 'fill:#363636;font-weight:500' }, `s = ${c.s.toFixed(3)}`);
+}
+
+/* ---------- Trajectories (Fig. 4 redrawn, all 23 setups) ---------- */
+function initTraj(T) {
+  const tr = T.slice().sort(order), sel = $('trajSel'); let og, last;
+  for (const t of tr) { if (t.dataset !== last) { og = document.createElement('optgroup'); og.label = t.dataset; sel.appendChild(og); last = t.dataset; }
+    const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.condition} · ${t.backbone}`; og.appendChild(o); }
+  sel.value = 'oxford_night_cosplace';
+  const draw = () => {
+    const t = tr.find(x => x.id === sel.value), box = $('traj'); box.textContent = '';
+    const P = a => { const o = []; for (let i = 0; i < a.length; i += 2) o.push([a[i], a[i + 1]]); return o; };
+    const gt = P(t.gt); let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    gt.forEach(([a, b]) => { x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b); });
+    const padX = (x1 - x0) * .35 + 20, padY = (y1 - y0) * .35 + 20; x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+    const side = Math.max(x1 - x0, y1 - y0), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; x0 = cx - side / 2; y0 = cy - side / 2;
+    const S = 240, sc = S / side, X = v => (v - x0) * sc, Y = v => S - (v - y0) * sc;
+    const names = [['odom_only', 'Odometry only'], ['no_gate', 'No gate'], ['cosine', 'Cosine gate'], ['safevpr', 'SafeVPR gate']];
+    names.forEach(([k, nm], i) => {
+      const a = t.arms[k], d = document.createElement('div'); box.appendChild(d);
+      const cap = document.createElement('div'); cap.className = 'tcap';
+      cap.innerHTML = `<b class="${k === 'safevpr' ? 'ours' : ''}">${nm}</b><span>ATE ${a.ate.toFixed(1)} m</span><span>${a.n_fix} closures · ${a.n_false} erroneous</span>`;
+      d.appendChild(cap);
+      const svg = el('svg', { class: 'chart', viewBox: `0 0 ${S} ${S}`, role: 'img', 'aria-label': `${nm}: ATE ${a.ate} m, ${a.n_false} erroneous closures` }, d);
+      const g = el('g', {}, svg);
+      const cid = `clip${i}`; const cp = el('clipPath', { id: cid }, g); el('rect', { x: 0, y: 0, width: S, height: S }, cp);
+      el('rect', { x: 0, y: 0, width: S, height: S, style: 'fill:#FCFCFC;stroke:#E2E2E2' }, g);
+      const inner = el('g', { 'clip-path': `url(#${cid})` }, g);
+      el('polyline', { points: gt.map(([p, q]) => `${X(p)},${Y(q)}`).join(' '), style: 'fill:none;stroke:#8A8A8A;stroke-width:1.3;stroke-dasharray:4 3' }, inner);
+      el('polyline', { points: P(a.xy).map(([p, q]) => `${X(p)},${Y(q)}`).join(' '), style: 'fill:none;stroke:var(--safe);stroke-width:1.5;stroke-linejoin:round' }, inner);
+      P(a.good).forEach(([p, q]) => el('circle', { cx: X(p), cy: Y(q), r: 1.9, style: 'fill:var(--good)' }, inner));
+      P(a.bad).forEach(([p, q]) => { const u = X(p), v = Y(q); el('path', { d: `M${u - 3},${v - 3}L${u + 3},${v + 3}M${u - 3},${v + 3}L${u + 3},${v - 3}`, style: 'stroke:var(--bad);stroke-width:1.6' }, inner); });
+      const raw = side / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), bar = [5, 2, 1].map(f => f * mag).find(v => v <= raw) || mag, bpx = bar * sc;
+      el('line', { x1: 10, x2: 10 + bpx, y1: S - 10, y2: S - 10, style: 'stroke:#363636;stroke-width:2' }, g);
+      txt(g, { class: 'tick', x: 10, y: S - 14 }, `${bar >= 1000 ? bar / 1000 + ' km' : bar + ' m'}`);
+    });
+  };
+  sel.addEventListener('change', draw); draw();
+}
+
+/* ---------- Results table (Table I) ---------- */
+function initTable() {
+  const t = $('resTable'), A = ['0.05', '0.1'];
+  let h = '<thead><tr><th></th><th colspan="4" style="text-align:center">α = 0.05</th><th colspan="4" style="text-align:center">α = 0.10</th></tr><tr><th>Method</th>';
+  for (const _ of A) h += '<th>Pass</th><th>Non-tr.</th><th>FDR ↓</th><th>TPR ↑</th>';
+  h += '</tr></thead><tbody>';
+  const desc = { Oxford: 'Oxford RobotCar (4 traversals × 3 backbones, 12 setups)', NCLT: 'NCLT (3 sessions × 3 backbones − 1 missing, 8 setups)', 'St Lucia': 'St Lucia (1 day pair × 3 backbones, 3 setups)', All: 'All 23 setups' };
+  const sev = (k, n) => { const f = (n - k) / n; return f === 0 ? '' : f <= .15 ? 'f1' : f <= .5 ? 'f2' : 'f3'; };
+  for (const b of D.table) {
+    h += `<tr class="blk"><td colspan="9">${desc[b.block]}</td></tr>`;
+    const best = {}; for (const a of A) { best[a] = { fdr: Math.min(...b.methods.map(m => m[a].fdr)), tpr: Math.max(...b.methods.map(m => m[a].tpr)) }; }
+    for (const m of b.methods) {
+      h += `<tr class="${m.name.startsWith('SafeVPR') ? 'ours' : ''}"><td>${m.name}</td>`;
+      for (const a of A) { const c = m[a];
+        h += `<td class="${sev(c.passed, b.n)}">${c.passed}/${b.n}</td><td class="${sev(c.nontriv, b.n)}">${c.nontriv}/${b.n}</td>`;
+        h += `<td>${c.fdr === best[a].fdr ? '<u>' + c.fdr.toFixed(4) + '</u>' : c.fdr.toFixed(4)}</td><td>${c.tpr === best[a].tpr ? '<u>' + c.tpr.toFixed(3) + '</u>' : c.tpr.toFixed(3)}</td>`; }
+      h += '</tr>';
+    }
+  }
+  t.innerHTML = h + '</tbody>';
+}
+})();
+</script>
+
+</body>
+</html>
