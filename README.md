@@ -2,58 +2,23 @@
 
 **Patch-Based Verification with Empirical FDR Control for Cross-Condition Sequence Visual Place Recognition**
 
-**[Project page](https://hasar12138.github.io/SafeVPR/)** · [Paper (arXiv)](https://arxiv.org/abs/2605.28048) · Accepted to IEEE Robotics and Automation Letters (RA-L), 2026
+[![Project Page](https://img.shields.io/badge/Project-Page-0072B2)](https://hasar12138.github.io/SafeVPR/)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.28048-b31b1b)](https://arxiv.org/abs/2605.28048)
+[![RA-L](https://img.shields.io/badge/IEEE%20RA--L-accepted%202026-363636)](https://hasar12138.github.io/SafeVPR/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
-SafeVPR turns any black-box sequence retrieval into an accept/reject decision
-with empirically controlled false-discovery rate (FDR). Each frame below is one
-query decision under cross-condition shift.
+![Ungated vs. SafeVPR-gated pose-graph relocalization](assets/teaser_closed_loop.gif)
 
-**Accept a correct match** — Oxford RobotCar, dusk: the verifier score clears
-the per-bin threshold, so the localization is used.
+SafeVPR decides whether a robot should accept a retrieved place-recognition match. It scores the match by frozen DINOv2 patch agreement and calibrates a per-bin accept threshold with Mondrian conformal Learn-Then-Test, so a target false-discovery rate holds on conditions never seen in calibration: **23/23** held-out cross-condition setups at α = 0.10, and in pose-graph relocalization **29.6× fewer** erroneous loop closures with median trajectory error cut from **95.5 m to 9.7 m**. The control is empirical, measured on these deployments, not a formal guarantee under arbitrary shift.
 
-![Oxford dusk demo](assets/demo_oxford_dusk.gif)
+**Method, interactive demos, results and video: [project page](https://hasar12138.github.io/SafeVPR/).**
 
-**Abstain on a wrong match** — St Lucia, morning↔noon: the retrieved top-1 is
-49 m away; the verifier score falls below the threshold, so SafeVPR abstains
-instead of accepting the error.
+## News
 
-![St Lucia demo](assets/demo_st_lucia.gif)
+- **2026-10** Accepted to IEEE Robotics and Automation Letters (RA-L). [Project page](https://hasar12138.github.io/SafeVPR/) online.
+- **2026-05** Preprint on [arXiv](https://arxiv.org/abs/2605.28048); code released.
 
-## 1. Overview
-
-Visual place recognition (VPR) systems must decide not only *where* a query was
-taken but also *whether to trust* that decision. Under condition shift (day vs.
-night, season changes, weather) the raw retrieval similarity is a poor proxy for
-correctness, so a fixed similarity threshold cannot keep the false-discovery
-rate (FDR) bounded.
-
-SafeVPR is a three-stage, backbone-agnostic pipeline that adds a calibrated
-accept/reject decision on top of any black-box sequence retrieval:
-
-1. **Stage 1 — Retrieval (black box).** A frame-level similarity matrix is reduced
-   to a per-database-window diagonal-mean cosine score, pre-screened, and
-   re-ranked by DTW alignment to produce a top-1 candidate.
-2. **Stage 2 — Verifier (ours).** DINOv2 ViT-L/14 patch features of the `T=10`
-   diagonal frame pairs are matched with a mutual-nearest-neighbour + Lowe-ratio
-   test, yielding a scalar verification score `s` in `[0, 1]`.
-3. **Stage 3 — Conformal calibration (ours).** A Mondrian conformal Learn-Then-Test
-   (LTT) procedure fits a per-quintile-bin threshold with a Bonferroni-split error
-   budget, targeting FDR at a chosen `alpha`.
-
-**Key claim:** empirical validity decouples from raw discrimination — a verifier
-with higher AUROC does *not* automatically control FDR better. What matters is
-the stability of the score-conditional error rate under condition shift, and the
-patch-MNN score keeps that map stable where cosine and stronger-AUROC verifiers
-do not. SafeVPR reaches 23/23 empirically valid cross-condition setups at
-`alpha = 0.10`.
-
-**Claim scope.** The FDR control demonstrated here is *empirical*, not a formal
-guarantee: cross-condition deployment violates the exchangeability assumption
-behind conformal prediction, and Mondrian binning does not restore it. Validity
-is established on the evaluated benchmark (and characterized under
-leave-one-dataset-out transfer in the paper), not proven distribution-free.
-
-## 2. Installation
+## Installation
 
 ```bash
 pip install -e .
@@ -63,28 +28,7 @@ Requires Python 3.10+ and PyTorch (CPU is sufficient for the smoke test; a GPU i
 needed for full extraction). DINOv2 ViT-L/14 is fetched via `torch.hub` on first
 use, or you can point to a local checkpoint.
 
-## 3. Data & weights
-
-SafeVPR ships **code only** — no datasets, weights, or precomputed results.
-
-| Dataset | Role | Expected path key (in `configs/paths.yaml`) |
-|---|---|---|
-| Oxford RobotCar | cross-condition (day/night/rain/dusk) | `datasets.oxford_robotcar` |
-| NCLT | campus, perceptual aliasing | `datasets.nclt` |
-| St Lucia | morning vs. noon | `datasets.st_lucia` |
-
-| Weights | Notes |
-|---|---|
-| DINOv2 ViT-L/14 | verifier backbone; `weights.dinov2: null` auto-downloads via `torch.hub` |
-| NetVLAD / CosPlace / D2VPR | black-box Stage-1 backbones (cosine retrieval) |
-
-Copy the template and fill in the paths (the real file is git-ignored):
-
-```bash
-cp configs/paths.example.yaml configs/paths.yaml
-```
-
-## 4. Quick start
+## Quick start
 
 Run the cross-condition accept/abstain decision on a bundled sample of **real**
 verifier scores (the eight CosPlace-backbone deployments) — no images, GPU, or
@@ -117,7 +61,32 @@ decision   = accept(test_scores, thresholds)   # True = accept, False = abstain
 print("FDR", fdr(test_correct, decision), "TPR", tpr(test_correct, decision))
 ```
 
-## 5. Reproducing the main result
+<details>
+<summary><b>Data &amp; weights</b></summary>
+
+SafeVPR ships **code only** — no datasets, weights, or precomputed results.
+
+| Dataset | Role | Expected path key (in `configs/paths.yaml`) |
+|---|---|---|
+| Oxford RobotCar | cross-condition (day/night/rain/dusk) | `datasets.oxford_robotcar` |
+| NCLT | campus, perceptual aliasing | `datasets.nclt` |
+| St Lucia | morning vs. noon | `datasets.st_lucia` |
+
+| Weights | Notes |
+|---|---|
+| DINOv2 ViT-L/14 | verifier backbone; `weights.dinov2: null` auto-downloads via `torch.hub` |
+| NetVLAD / CosPlace / D2VPR | black-box Stage-1 backbones (cosine retrieval) |
+
+Copy the template and fill in the paths (the real file is git-ignored):
+
+```bash
+cp configs/paths.example.yaml configs/paths.yaml
+```
+
+</details>
+
+<details>
+<summary><b>Reproducing the main result</b></summary>
 
 The headline cross-condition result (23/23 valid setups at `alpha = 0.10`, mean
 accepted FDR 0.014, mean TPR 0.75) is reproduced in two steps. First extract the
@@ -142,7 +111,10 @@ SuperPoint+LightGlue) and the secondary analyses (robustness, pose-error,
 runtime, sensitivity) are reported in the paper; this release ships the method
 and the main cross-condition evaluation.
 
-## 6. Method → code map
+</details>
+
+<details>
+<summary><b>Method → code map and repo layout</b></summary>
 
 | Stage | Module | Public functions |
 |---|---|---|
@@ -156,8 +128,6 @@ Numerical core (fixed): `T_FRAMES = 10`, Lowe `RATIO_THRESH = 0.9`,
 `PATCH_DIM = 1024`, DINOv2 ViT-L/14 at 224×224 with ImageNet normalization;
 Mondrian `N_BINS = 5`, LTT Bonferroni `GRID_M = 5`, `DELTA = 0.05`,
 `ALPHAS = (0.05, 0.10)`, per-bin `tau`.
-
-## 7. Repo layout
 
 ```
 SafeVPR/
@@ -178,7 +148,10 @@ SafeVPR/
 └── assets/                  # README demo GIFs
 ```
 
-## 8. Paper supplement
+</details>
+
+<details>
+<summary><b>Paper supplement</b></summary>
 
 Additional tables and figures that accompany the paper (the manuscript
 itself is self-contained and does not cite them) live in
@@ -196,18 +169,20 @@ PNG preview for each item):
 | [S7 — full verifier sweep](docs/paper_supplement/README.md#s7-verifier-x-calibrator-sweep--full-table-both-alpha-levels) | Verifier x calibrator sweep at both alpha levels |
 | [S8 — calibration-budget numbers](docs/paper_supplement/README.md#s8-calibration-budget-ablation-numbers) | Subsampled calibration pools: validity kept, coverage lost below ~150/bin |
 
-## 9. Citation
+</details>
+
+## Citation
 
 ```bibtex
-@article{safevpr2026,
-  title   = {SafeVPR: Patch-Based Verification with Empirical {FDR} Control
-             for Cross-Condition Sequence Visual Place Recognition},
-  author  = {Anonymous},          % TODO camera-ready
-  journal = {Under review},       % TODO camera-ready
+@article{sier2026safevpr,
+  title   = {{SafeVPR}: Patch-Based Conformal Verification for Safe
+             Cross-Condition Sequence Visual Place Recognition},
+  author  = {Sier, Ha and Zhang, Jiaqiang and Zou, Zhuo and Yu, Xianjia and Westerlund, Tomi},
+  journal = {arXiv preprint arXiv:2605.28048},
   year    = {2026}
 }
 ```
 
-## 10. License
+## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT, see [`LICENSE`](LICENSE).
